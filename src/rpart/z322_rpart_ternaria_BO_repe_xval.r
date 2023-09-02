@@ -20,7 +20,7 @@ require("mlrMBO")
 # Defino la  Optimizacion Bayesiana
 PARAM <- list()
 
-PARAM$home <- "~/buckets/b1/"
+PARAM$home <- "C:/Users/Administrator/Documents/MaestriaDataMining/dmeyf2023/"
 
 PARAM$experimento <- "HT3220"
 
