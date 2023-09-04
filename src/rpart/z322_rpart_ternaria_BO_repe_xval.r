@@ -38,7 +38,7 @@ PARAM$BO_iter <- 300
 
 # la letra L al final de 1L significa ENTERO
 PARAM$hs <- makeParamSet(
-  #makeNumericParam("cp", lower = -1, upper = 0.1),
+  makeNumericParam("cp", lower = -1, upper = -0.1),
   makeIntegerParam("minsplit", lower = 1L, upper = 8000L),
   makeIntegerParam("minbucket", lower = 1L, upper = 4000L),
   makeIntegerParam("maxdepth", lower = 3L, upper = 20L),
@@ -279,3 +279,4 @@ if (!file.exists(archivo_BO)) {
   run <- mboContinue(archivo_BO)
 }
 # retomo en caso que ya exista
+
