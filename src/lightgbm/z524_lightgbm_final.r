@@ -19,16 +19,16 @@ PARAM$experimento <- "KA5240"
 PARAM$input$dataset <- "./datasets/competencia_02.csv.gz"
 
 # meses donde se entrena el modelo
-PARAM$input$training <- c(201901, 201902, 201903, 201904, 201905, 201906, 201907, 201908, 201909,201910, 201911, 201912)
+PARAM$input$training <- c(201901, 201902, 201903, 201904, 201905, 201906, 201907, 201908, 201909,201910, 201911, 201912, 202001, 202002, 202101, 202102, 202103, 202104,202105,202106)
 PARAM$input$future <- c(202107) # meses donde se aplica el modelo
 
 PARAM$finalmodel$semilla <- 500107
 
-PARAM$finalmodel$num_iterations <- 4928
-PARAM$finalmodel$learning_rate <- 0.0189943331895954
-PARAM$finalmodel$feature_fraction <- 0.892623977897483
-PARAM$finalmodel$min_data_in_leaf <- 785
-PARAM$finalmodel$num_leaves <- 666
+PARAM$finalmodel$num_iterations <- 2726
+PARAM$finalmodel$learning_rate <- 0.043962506
+PARAM$finalmodel$feature_fraction <- 0.72295696
+PARAM$finalmodel$min_data_in_leaf <- 3
+PARAM$finalmodel$num_leaves <- 379
 
 
 PARAM$finalmodel$max_bin <- 31
