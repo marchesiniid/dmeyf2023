@@ -14,12 +14,12 @@ require("lightgbm")
 # defino los parametros de la corrida, en una lista, la variable global  PARAM
 #  muy pronto esto se leera desde un archivo formato .yaml
 PARAM <- list()
-PARAM$experimento <- "KA240_BO_83_10092021"
+PARAM$experimento <- "KA240_BO_78_10092021"
 
 PARAM$input$dataset <- "./datasets/competencia_02.csv.gz"
 
 # meses donde se entrena el modelo
-PARAM$input$training <- c(202011, 202012, 202101, 202102, 202103, 202104, 202105, 202106)
+PARAM$input$training <- c(201901, 201902, 201903,201904,201905,201906,201907,201908,201909,201910,201911,201912)
 PARAM$input$future <- c(202107) # meses donde se aplica el modelo
 
 PARAM$finalmodel$semilla <- 500107
