@@ -32,18 +32,18 @@ options(error = function() {
 #  muy pronto esto se leera desde un archivo formato .yaml
 PARAM <- list()
 
-PARAM$experimento <- "HT8230_BO_201909-202002_202009-202105_10142023"
+PARAM$experimento <- "HT8230_BO_ExpColaborativo_01"
 
-PARAM$input$dataset <- "./datasets/competencia_02.csv.gz"
+PARAM$input$dataset <- "./datasets/competencia_03.csv.gz"
 
 # los meses en los que vamos a entrenar
 #  mucha magia emerger de esta eleccion
-PARAM$input$testing <- c(202105)
-PARAM$input$validation <- c(202104)
+PARAM$input$testing <- c(202107)
+PARAM$input$validation <- c(202106)
 PARAM$input$training <- c(202010, 202011, 202012, 202101, 202102, 202103)
 
 # un undersampling de 0.1  toma solo el 10% de los CONTINUA
-PARAM$trainingstrategy$undersampling <- 0.85
+PARAM$trainingstrategy$undersampling <- 0.20
 PARAM$trainingstrategy$semilla_azar <- 500107 # Aqui poner su  primer  semilla
 
 PARAM$hyperparametertuning$POS_ganancia <- 273000
@@ -55,7 +55,7 @@ PARAM$lgb_semilla <- 500167
 
 # Hiperparametros FIJOS de  lightgbm
 PARAM$lgb_basicos <- list(
-  boosting = "gbdt", # puede ir  dart  , ni pruebe random_forest
+  #boosting = "gbdt", # puede ir  dart  , ni pruebe random_forest
   objective = "binary",
   metric = "custom",
   first_metric_only = TRUE,
@@ -64,10 +64,10 @@ PARAM$lgb_basicos <- list(
   force_row_wise = TRUE, # para reducir warnings
   verbosity = -100,
   max_depth = -1L, # -1 significa no limitar,  por ahora lo dejo fijo
-  min_gain_to_split = 0.0, # min_gain_to_split >= 0.0
+  #min_gain_to_split = 0.0, # min_gain_to_split >= 0.0
   min_sum_hessian_in_leaf = 0.001, #  min_sum_hessian_in_leaf >= 0.0
-  lambda_l1 = 0.0, # lambda_l1 >= 0.0
-  lambda_l2 = 0.0, # lambda_l2 >= 0.0
+  #lambda_l1 = 0.0, # lambda_l1 >= 0.0
+  #lambda_l2 = 0.0, # lambda_l2 >= 0.0
   max_bin = 31L, # lo debo dejar fijo, no participa de la BO
   num_iterations = 9999, # un numero muy grande, lo limita early_stopping_rounds
 
@@ -90,11 +90,31 @@ PARAM$lgb_basicos <- list(
 # Aqui se cargan los hiperparametros que se optimizan
 #  en la Bayesian Optimization
 PARAM$bo_lgb <- makeParamSet(
+  makeDiscreteParam("boosting", values = c("gbdt", "dart")),
+  makeNumericParam("drop_rate", lower = 0.0, upper = 1.0),
+  makeIntegerParam("max_drop", lower = 1, upper = 100),
+  makeNumericParam("skip_drop", lower = 0.0, upper = 1.0),
+  makeDiscreteParam("xgboost_dart_mode", values = c(FALSE, TRUE)),
+  makeDiscreteParam("uniform_drop", values = c(FALSE, TRUE)),
+  makeNumericParam("min_gain_to_split", lower = 0.0, upper = 1.0),
+  makeNumericParam("lambda_l1", lower = 0.0, upper = 50.0),
+  makeNumericParam("lambda_l2", lower = 0.0, upper = 50.0),
   makeNumericParam("learning_rate", lower = 0.02, upper = 0.3),
   makeNumericParam("feature_fraction", lower = 0.01, upper = 1.0),
   makeIntegerParam("num_leaves", lower = 8L, upper = 1024L),
-  makeIntegerParam("min_data_in_leaf", lower = 100L, upper = 50000L)
+  makeIntegerParam("min_data_in_leaf", lower = 100L, upper = 50000L),
+  
 )
+
+#Restricciones condicionales
+cond1 <- expression(
+  ifelse(boosting == "dart", 
+         (drop_rate + max_drop + skip_drop + xgboost_dart_mode + uniform_drop), 
+         0)
+)
+
+bo_lgb <- addCondition(bo_lgb, cond1)
+
 
 # si usted es ambicioso, y tiene paciencia, podria subir este valor a 100
 PARAM$bo_iteraciones <- 50 # iteraciones de la Optimizacion Bayesiana
