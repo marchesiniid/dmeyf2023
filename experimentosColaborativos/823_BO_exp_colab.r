@@ -32,7 +32,7 @@ options(error = function() {
 #  muy pronto esto se leera desde un archivo formato .yaml
 PARAM <- list()
 
-PARAM$experimento <- "HT8230_baseline_exp_colab"
+PARAM$experimento <- "HT8230_BO_expColab_dartMode_grupoA"
 
 PARAM$input$dataset <- "./datasets/competencia_03_baseline.csv.gz"
 
@@ -87,14 +87,15 @@ PARAM$bo_lgb <- makeParamSet(
   makeNumericParam("feature_fraction", lower = 0.01, upper = 1.0),
   makeIntegerParam("num_leaves", lower = 8L, upper = 1024L),
   makeIntegerParam("min_data_in_leaf", lower = 100L, upper = 50000L),
+  #nuevos hp
   makeNumericParam("lambda_l1", lower = 0.0, upper = 600),
   makeNumericParam("lambda_l2", lower = 0.0, upper = 600),
   makeNumericParam("min_gain_to_split", lower = 0.0, upper = 20),
   makeNumericParam("drop_rate", lower = 0.0, upper = 1.0),
   makeIntegerParam("max_drop", lower = 1, upper = 100),
   makeNumericParam("skip_drop", lower = 0.0, upper = 1.0),
-  makeDiscreteVectorParam("Xgboost_dart_mode", len = 2, values = c("False", "True")),
-  makeDiscreteVectorParam("Uniform_drop", len = 2, values = c("False", "True"))
+  makeDiscreteParam("Xgboost_dart_mode", values = c(FALSE, TRUE)),
+  makeDiscreteParam("Uniform_drop", values = c(FALSE,TRUE))
 )
 
 # si usted es ambicioso, y tiene paciencia, podria subir este valor a 100
