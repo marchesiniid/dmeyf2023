@@ -56,6 +56,8 @@ PARAM$lgb_semilla <- 200177
 # Hiperparametros FIJOS de  lightgbm
 PARAM$lgb_basicos <- list(
   boosting = "dart", # puede ir  dart  , ni pruebe random_forest
+  Xgboost_dart_mode = TRUE,
+  Uniform_drop = TRUE,
   objective = "binary",
   metric = "custom",
   first_metric_only = TRUE,
@@ -93,9 +95,9 @@ PARAM$bo_lgb <- makeParamSet(
   makeNumericParam("min_gain_to_split", lower = 0.0, upper = 20),
   makeNumericParam("drop_rate", lower = 0.0, upper = 1.0),
   makeIntegerParam("max_drop", lower = 1, upper = 100),
-  makeNumericParam("skip_drop", lower = 0.0, upper = 1.0),
-  makeDiscreteParam("Xgboost_dart_mode", values = c(FALSE, TRUE)),
-  makeDiscreteParam("Uniform_drop", values = c(FALSE,TRUE))
+  makeNumericParam("skip_drop", lower = 0.0, upper = 1.0)
+#  makeDiscreteParam("Xgboost_dart_mode", values = c(FALSE, TRUE)),
+#  makeDiscreteParam("Uniform_drop", values = c(FALSE,TRUE))
 )
 
 # si usted es ambicioso, y tiene paciencia, podria subir este valor a 100
