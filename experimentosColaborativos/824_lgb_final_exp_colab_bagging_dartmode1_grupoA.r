@@ -15,7 +15,7 @@ require("lightgbm")
 # defino los parametros de la corrida, en una lista, la variable global  PARAM
 #  muy pronto esto se leera desde un archivo formato .yaml
 PARAM <- list()
-PARAM$experimento <- "KA8240_exp_colab_bagging_gbdt_grupoA"
+PARAM$experimento <- "KA8240_exp_colab_bagging_dart1_grupoA"
 
 PARAM$input$dataset <- "./datasets/competencia_03_baseline.csv.gz"
 
@@ -91,15 +91,15 @@ for (i in 1:20) {
   PARAM$finalmodel$semilla <- semillas[i]
   
   # hiperparametros intencionalmente 
-  PARAM$finalmodel$optim$num_iterations <- 1036
+  PARAM$finalmodel$optim$num_iterations <- 1124
   
-  PARAM$finalmodel$optim$learning_rate <- 0.081620061
+  PARAM$finalmodel$optim$learning_rate <- 0.0358310774234203
   
-  PARAM$finalmodel$optim$feature_fraction <- 0.989414925
+  PARAM$finalmodel$optim$feature_fraction <- 0.92982875638498
   
-  PARAM$finalmodel$optim$min_data_in_leaf <- 26370
+  PARAM$finalmodel$optim$min_data_in_leaf <- 21028
   
-  PARAM$finalmodel$optim$num_leaves <- 708
+  PARAM$finalmodel$optim$num_leaves <- 111
   
   PARAM$finalmodel$optim$max_depth <- 1L
     
@@ -109,12 +109,14 @@ for (i in 1:20) {
   
   PARAM$finalmodel$optim$neg_bagging_fraction <- 1.0
   
-  envios_opt <- 11119
+  envios_opt <- 11383
   
   
   # Hiperparametros FIJOS de  lightgbm
   PARAM$finalmodel$lgb_basicos <- list(
-    boosting = "gbdt", # puede ir  dart  , ni pruebe random_forest
+    boosting = "dart", # puede ir  dart  , ni pruebe random_forest
+    Xgboost_dart_mode = TRUE,
+    Uniform_drop = TRUE,
     objective = "binary",
     metric = "custom",
     first_metric_only = TRUE,
@@ -123,19 +125,19 @@ for (i in 1:20) {
     force_row_wise = TRUE, # para reducir warnings
     verbosity = -100,
 
-    min_gain_to_split = 0.055753626, # min_gain_to_split >= 0.0
+    min_gain_to_split = 4.34385824555452, # min_gain_to_split >= 0.0
     min_sum_hessian_in_leaf = 0.001, #  min_sum_hessian_in_leaf >= 0.0
-    lambda_l1 = 599.4359579, # lambda_l1 >= 0.0
-    lambda_l2 = 598.4036644, # lambda_l2 >= 0.0
+    lambda_l1 = 363.393628590102, # lambda_l1 >= 0.0
+    lambda_l2 = 226.433774307565, # lambda_l2 >= 0.0
     max_bin = 31L, # lo debo dejar fijo, no participa de la BO
     
 
     is_unbalance = FALSE, #
     scale_pos_weight = 1.0, # scale_pos_weight > 0.0
     
-    drop_rate = 0.1, # 0.0 < neg_bagging_fraction <= 1.0
-    max_drop = 50, # <=0 means no limit
-    skip_drop = 0.5, # 0.0 <= skip_drop <= 1.0
+    drop_rate = 0.834349480351979, # 0.0 < neg_bagging_fraction <= 1.0
+    max_drop = 61, # <=0 means no limit
+    skip_drop = 0.823992086113089, # 0.0 <= skip_drop <= 1.0
     
     extra_trees = TRUE, # Magic Sauce
     
