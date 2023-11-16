@@ -4,13 +4,13 @@ import duckdb
 con = duckdb.connect()
 
 # Load data from CSV file into a DuckDB table
-con.execute("CREATE TABLE competencia_02 AS SELECT * FROM read_csv_auto('~/buckets/b1/datasets/competencia_02_crudo.csv.gz');")
+con.execute("CREATE TABLE competencia_03 AS SELECT * FROM read_csv_auto('~/buckets/b1/datasets/competencia_03_crudo.csv.gz');")
 
 result=con.execute(f"""create or replace table targets as
 with periodos as (
-    select distinct foto_mes from competencia_02
+    select distinct foto_mes from competencia_03
 ), clientes as (
-    select distinct numero_de_cliente from competencia_02
+    select distinct numero_de_cliente from competencia_03
 ), todo as (
     select numero_de_cliente, foto_mes from clientes cross join periodos
 ), clase_ternaria as (
@@ -36,7 +36,7 @@ with periodos as (
         ELSE 'CONTINUA'
         END as clase_ternaria
     from todo t
-    left join competencia_02 c using (numero_de_cliente, foto_mes)
+    left join competencia_03 c using (numero_de_cliente, foto_mes)
 ) select
   foto_mes
   , numero_de_cliente
@@ -44,20 +44,20 @@ with periodos as (
 from clase_ternaria 
 where mes_0 = 1""")
 
-res2=con.execute(f"""alter table competencia_02 add column clase_ternaria VARCHAR(10)
+res2=con.execute(f"""alter table competencia_03 add column clase_ternaria VARCHAR(10)
 """)
 
-res3=con.execute(f"""update competencia_02
+res3=con.execute(f"""update competencia_03
 set clase_ternaria = targets.clase_ternaria
 from targets
-where competencia_02.numero_de_cliente = targets.numero_de_cliente and competencia_02.foto_mes = targets.foto_mes;
+where competencia_03.numero_de_cliente = targets.numero_de_cliente and competencia_03.foto_mes = targets.foto_mes;
 """)
 
 print("ACA FETCHEA")
 result_df = res3.fetchdf()
 print("ARRANCA A ESCRIBIR")
 res3=con.execute(f"""
-COPY competencia_02 TO '~/buckets/b1/datasets/colaborativos_withTargets.csv' (FORMAT CSV, COMPRESSION GZIP, HEADER)
+COPY competencia_03 TO '~/buckets/b1/datasets/competencia_03_sexagenaria.csv' (FORMAT CSV, COMPRESSION GZIP, HEADER)
 """)
 # Specify the path for the new CSV file
 #output_csv = 'features.csv'
