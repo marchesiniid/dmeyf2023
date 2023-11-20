@@ -30,9 +30,9 @@ options(error = function() {
 #  muy pronto esto se leera desde un archivo formato .yaml
 PARAM <- list()
 
-PARAM$experimento <- "823_BO_NoBaja4_bagging"
+PARAM$experimento <- "823_BO_NoBaja4_bagging_undersampling05"
 
-PARAM$input$dataset <- "./datasets/competencia_03_fe_final.csv.gz"
+PARAM$input$dataset <- "./datasets/competencia_03_all6.gz"
 
 # los meses en los que vamos a entrenar
 #  mucha magia emerger de esta eleccion
@@ -41,7 +41,7 @@ PARAM$input$validation <- c(202106)
 PARAM$input$training <- c(202010, 202011, 202012, 202101, 202102, 202103, 202104, 202105)
 
 # Sin undersampling
-PARAM$trainingstrategy$undersampling <- 1.0
+PARAM$trainingstrategy$undersampling <- 0.5
 PARAM$trainingstrategy$semilla_azar <- 500107
 
 PARAM$hyperparametertuning$POS_ganancia <- 273000
