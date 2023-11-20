@@ -38,7 +38,7 @@ PARAM$input$dataset <- "./datasets/competencia_03_all6.gz"
 #  mucha magia emerger de esta eleccion
 PARAM$input$testing <- c(202107)
 PARAM$input$validation <- c(202106)
-PARAM$input$training <- c(202010, 202011, 202012, 202101, 202102, 202103, 202104, 202105)
+PARAM$input$training <- c(201909,201910,201911,201912,202001,202002,202010, 202011, 202012, 202101, 202102, 202103, 202104, 202105)
 
 # Sin undersampling
 PARAM$trainingstrategy$undersampling <- 0.5
