@@ -52,7 +52,7 @@ PARAM$lgb_semilla <- 500167
 #------------------------------------------------------------------------------
 
 # Hiperparametros FIJOS de  lightgbm
-PARAM$lgb_basicos <-<- list(
+PARAM$lgb_basicos <- list(
   boosting = "gbdt", # puede ir  dart  , ni pruebe random_forest
   objective = "binary",
   metric = "custom",
