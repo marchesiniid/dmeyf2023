@@ -199,7 +199,7 @@ for (i in 1:20) {
     tb_entrega[1:envios, Predicted := 1L]
   
     fwrite(tb_entrega[, list(numero_de_cliente, Predicted)],
-      file = paste0(PARAM$experimento, "_",num,"_", envios, ".csv"),
+      file = paste0(PARAM$experimento, "_",i,"_", envios, ".csv"),
       sep = ","
     )
     
