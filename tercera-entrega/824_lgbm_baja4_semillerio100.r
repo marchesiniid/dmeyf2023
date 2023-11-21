@@ -39,6 +39,7 @@ setwd("~/buckets/b1")
 
 # cargo el dataset donde voy a entrenar
 dataset <- fread(PARAM$input$dataset, stringsAsFactors = TRUE)
+truth <- dataset[foto_mes == PARAM$input$future,c("numero_de_cliente","clase_ternaria")]
 
 
 # Catastrophe Analysis  -------------------------------------------------------
