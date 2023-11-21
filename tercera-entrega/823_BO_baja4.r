@@ -96,7 +96,7 @@ PARAM$bo_lgb <- makeParamSet(
   makeNumericParam("bagging_fraction", lower = 0.0, upper = 1.0),
   makeNumericParam("pos_bagging_fraction", lower = 0.0, upper = 1.0),
   makeNumericParam("neg_bagging_fraction", lower = 0.0, upper = 1.0),
-  makeIntegerParam("baggin_freq", lower = 1L, upper = 30L)
+  makeIntegerParam("bagging_freq", lower = 1L, upper = 30L)
 )
 
 # si usted es ambicioso, y tiene paciencia, podria subir este valor a 100
