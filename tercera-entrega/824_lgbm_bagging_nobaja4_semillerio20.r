@@ -106,9 +106,9 @@ for (i in 1:20) {
   # hiperparametros intencionalmente NO optimos
   PARAM$finalmodel$semilla <- semillas[i]
   PARAM$finalmodel$optim$num_iterations <- 100
-
+  PARAM$finalmodel$optim$feature_fraction_bynode <- 0.847985144655734
   PARAM$finalmodel$optim$learning_rate <- 0.114757327628415
-  PARAM$finalmodel$optim$feature_fraction <- 0.847985144655734
+  PARAM$finalmodel$optim$feature_fraction <- 0.409354438818549
   PARAM$finalmodel$optim$min_data_in_leaf <- 7728
   PARAM$finalmodel$optim$num_leaves <- 38
   envios_opt <- 12500
