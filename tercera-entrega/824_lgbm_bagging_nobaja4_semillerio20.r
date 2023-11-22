@@ -181,7 +181,7 @@ for (i in 1:20) {
   
   # grabo las probabilidad del modelo
   fwrite(tb_entrega,
-    file = paste0("prediccion_",num,"_.txt"),
+    file = paste0("prediccion_",i,"_.txt"),
     sep = "\t"
   )
 
@@ -234,7 +234,7 @@ for (envios in cortes) {
     tb_entrega_promedio[1:envios, Predicted := 1L]
   
     fwrite(tb_entrega_promedio[, list(numero_de_cliente, Predicted)],
-      file = paste0(PARAM$experimento,"semillerio_20_promedio","_",i,"_", envios, ".csv"),
+      file = paste0(PARAM$experimento,"semillerio_20_promedio","_", envios, ".csv"),
       sep = ","
     )
 }
