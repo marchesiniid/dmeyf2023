@@ -14,12 +14,12 @@ require("lightgbm")
 # defino los parametros de la corrida, en una lista, la variable global  PARAM
 #  muy pronto esto se leera desde un archivo formato .yaml
 PARAM <- list()
-PARAM$experimento <- "824_baja4_undersampling05_2019-2021"
+PARAM$experimento <- "824_baja4_semillerio20_iteracion78_201909-201912_202001_202011-202107"
 
 PARAM$input$dataset <- "./datasets/competencia_03_all6.csv.gz"
 
 # meses donde se entrena el modelo
-PARAM$input$training <- c(201909,201910,201912,202001,202002, 202010,202011, 202012, 202101, 202102, 202103, 202104, 202105, 202106, 202107)
+PARAM$input$training <- c(201909,201911,201912,202001, 202011, 202012, 202101, 202103, 202104, 202105, 202106, 202107)
 PARAM$input$future <- c(202109) # meses donde se aplica el modelo
 
 PARAM$finalmodel$semilla <- 500107
@@ -100,17 +100,18 @@ dtrain <- lgb.Dataset(
 )
 
 ganancias <- tibble::tribble(~semilla,~ganancia,~envios)
-
+lista_tb_entrega <- list()
 for (i in 1:20) {
 
   # hiperparametros intencionalmente NO optimos
   PARAM$finalmodel$semilla <- semillas[i]
-  PARAM$finalmodel$optim$num_iterations <- 95
-  PARAM$finalmodel$optim$learning_rate <- 0.133712039579837
-  PARAM$finalmodel$optim$feature_fraction <- 0.839279059022699
-  PARAM$finalmodel$optim$min_data_in_leaf <- 24904
-  PARAM$finalmodel$optim$num_leaves <- 254
-  envios_opt <- 11949
+  PARAM$finalmodel$optim$num_iterations <- 100
+
+  PARAM$finalmodel$optim$learning_rate <- 0.114757327628415
+  PARAM$finalmodel$optim$feature_fraction <- 0.847985144655734
+  PARAM$finalmodel$optim$min_data_in_leaf <- 7728
+  PARAM$finalmodel$optim$num_leaves <- 38
+  envios_opt <- 12500
 
   # Hiperparametros FIJOS de  lightgbm
   PARAM$finalmodel$lgb_basicos <- list(
@@ -122,18 +123,18 @@ for (i in 1:20) {
     feature_pre_filter = FALSE,
     force_row_wise = TRUE, # para reducir warnings
     verbosity = -100,
-    max_depth = 19, # -1 significa no limitar,  por ahora lo dejo fijo
+    max_depth = 15, # -1 significa no limitar,  por ahora lo dejo fijo
     min_gain_to_split = 0.0, # min_gain_to_split >= 0.0
     min_sum_hessian_in_leaf = 0.001, #  min_sum_hessian_in_leaf >= 0.0
     lambda_l1 = 0.0, # lambda_l1 >= 0.0
     lambda_l2 = 0.0, # lambda_l2 >= 0.0
     max_bin = 31L, # lo debo dejar fijo, no participa de la BO
   
-    bagging_fraction = 0.603878898205687, # 0.0 < bagging_fraction <= 1.0
-    pos_bagging_fraction = 0.966861021676372, # 0.0 < pos_bagging_fraction <= 1.0
-    neg_bagging_fraction = 0.765846209761544, # 0.0 < neg_bagging_fraction <= 1.0
+    bagging_fraction = 0.356616932816763, # 0.0 < bagging_fraction <= 1.0
+    pos_bagging_fraction = 0.817315066487956, # 0.0 < pos_bagging_fraction <= 1.0
+    neg_bagging_fraction = 0.61156457297626, # 0.0 < neg_bagging_fraction <= 1.0
     is_unbalance = FALSE,
-    bagging_freq = 30,#
+    bagging_freq = 2,#
     scale_pos_weight = 1.0, # scale_pos_weight > 0.0
   
     drop_rate = 0.1, # 0.0 < neg_bagging_fraction <= 1.0
@@ -193,8 +194,9 @@ for (i in 1:20) {
 # si la palabra inteligentemente no le significa nada aun
 # suba TODOS los archivos a Kaggle
 # espera a la siguiente clase sincronica en donde el tema sera explicado
+  lista_tb_entrega[[i]] <- tb_entrega
 
-  cortes <- seq(8000, 15000, by = 500)
+  cortes <- seq(8500, 15000, by = 500)
   for (envios in cortes) {
     tb_entrega[, Predicted := 0L]
     tb_entrega[1:envios, Predicted := 1L]
@@ -212,6 +214,8 @@ for (i in 1:20) {
                                 semillas[i], sum(tb_ganancias$gan),envios)
     
     ganancias <- rbind(ganancias,ganancia)
+
+
   }
   
   print(paste0("Iteracion ",i, " finalizada"))
@@ -221,6 +225,19 @@ for (i in 1:20) {
 write.csv(ganancias,
        file = paste0(PARAM$experimento, "_ganancias_semillerio.csv"),
        sep = ","
+
+tb_entrega_promedio <- rbindlist(lista_tb_entrega)[, .(prob = mean(prob)), by = .(numero_de_cliente, foto_mes)]
+setorder(tb_entrega_promedio, -prob)
+
+for (envios in cortes) {
+    tb_entrega_promedio[, Predicted := 0L]
+    tb_entrega_promedio[1:envios, Predicted := 1L]
+  
+    fwrite(tb_entrega_promedio[, list(numero_de_cliente, Predicted)],
+      file = paste0(PARAM$experimento,"semillerio_20_promedio","_",i,"_", envios, ".csv"),
+      sep = ","
+    )
+
 )
   
   
