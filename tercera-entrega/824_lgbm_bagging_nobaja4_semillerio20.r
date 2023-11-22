@@ -224,7 +224,7 @@ for (i in 1:20) {
 
 write.csv(ganancias,
        file = paste0(PARAM$experimento, "_ganancias_semillerio.csv"),
-       sep = ","
+       sep = ",")
 
 tb_entrega_promedio <- rbindlist(lista_tb_entrega)[, .(prob = mean(prob)), by = .(numero_de_cliente, foto_mes)]
 setorder(tb_entrega_promedio, -prob)
@@ -237,8 +237,9 @@ for (envios in cortes) {
       file = paste0(PARAM$experimento,"semillerio_20_promedio","_",i,"_", envios, ".csv"),
       sep = ","
     )
+}
 
-)
+
   
   
 
