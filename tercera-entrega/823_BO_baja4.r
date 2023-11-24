@@ -30,7 +30,7 @@ options(error = function() {
 #  muy pronto esto se leera desde un archivo formato .yaml
 PARAM <- list()
 
-PARAM$experimento <- "823_BO_NoBaja4_bagging_sinundersampling_202010-202105"
+PARAM$experimento <- "823_BO_nobaja4_bagging_sinundersampling_201901-202105"
 
 PARAM$input$dataset <- "./datasets/competencia_03_all6.gz"
 
@@ -38,7 +38,7 @@ PARAM$input$dataset <- "./datasets/competencia_03_all6.gz"
 #  mucha magia emerger de esta eleccion
 PARAM$input$testing <- c(202107)
 PARAM$input$validation <- c(202106)
-PARAM$input$training <- c(202010, 202011, 202012, 202101, 202102, 202103, 202104, 202105)
+PARAM$input$training <- c(201901, 201902, 201903,201904, 201905, 201906, 201907, 201908, 201909, 201910, 201911, 201912, 202001, 202002, 202003, 202004, 202009, 202010, 202011, 202012, 202101, 202102, 202103, 202104, 202105)
 
 # Sin undersampling
 PARAM$trainingstrategy$undersampling <- 1.0
