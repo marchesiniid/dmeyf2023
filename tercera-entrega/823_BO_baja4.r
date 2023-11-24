@@ -32,7 +32,7 @@ PARAM <- list()
 
 PARAM$experimento <- "823_BO_nobaja4_bagging_sinundersampling_201901-202105"
 
-PARAM$input$dataset <- "./datasets/competencia_03_all6.gz"
+PARAM$input$dataset <- "./datasets/competencia_03_all6.csv.gz"
 
 # los meses en los que vamos a entrenar
 #  mucha magia emerger de esta eleccion
