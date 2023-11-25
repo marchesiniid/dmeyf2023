@@ -14,12 +14,12 @@ require("lightgbm")
 # defino los parametros de la corrida, en una lista, la variable global  PARAM
 #  muy pronto esto se leera desde un archivo formato .yaml
 PARAM <- list()
-PARAM$experimento <- "824_baja4_semillerio20_iteracion85_201909-201912_202001_202011-202107"
+PARAM$experimento <- "824_nobaja4_drifting_201901-202107_iteracion67"
 
 PARAM$input$dataset <- "./datasets/competencia_03_all6.csv.gz"
 
 # meses donde se entrena el modelo
-PARAM$input$training <- c(201909,201911,201912,202001, 202011, 202012, 202101, 202103, 202104, 202105, 202106, 202107)
+PARAM$input$training <- c(201901, 201902, 201903,201904, 201905, 201906, 201907, 201908, 201909, 201910, 201911, 201912, 202001, 202002, 202003, 202004, 202009, 202010, 202011, 202012, 202101, 202102, 202103, 202104, 202105, 202106, 202107)
 PARAM$input$future <- c(202109) # meses donde se aplica el modelo
 
 PARAM$finalmodel$semilla <- 500107
@@ -47,7 +47,90 @@ truth <- dataset[foto_mes == PARAM$input$future,c("numero_de_cliente","clase_ter
 #   dataset[foto_mes == 202006, active_quarter := NA]
 
 # Data Drifting
-# por ahora, no hago nada
+#   dataset[foto_mes == 202006, active_quarter := NA]
+dataset[foto_mes == 201901, ctransferencias_recibidas := NA]
+dataset[foto_mes == 201901, mtransferencias_recibidas := NA ]
+
+dataset[foto_mes == 201902, ctransferencias_recibidas := NA]
+dataset[foto_mes == 201902, mtransferencias_recibidas := NA]
+
+dataset[foto_mes == 201903, ctransferencias_recibidas := NA]
+dataset[foto_mes == 201903, mtransferencias_recibidas := NA]
+
+dataset[foto_mes == 201904, ctarjeta_visa_debitos_automaticos := NA]
+dataset[foto_mes == 201904, ctransferencias_recibidas := NA]
+dataset[foto_mes == 201904, mtransferencias_recibidas := NA]
+dataset[foto_mes == 201904, mttarjeta_visa_debitos_automaticos := NA]
+dataset[foto_mes == 201904, Visa_mfinanciacion_limite := NA]
+
+dataset[foto_mes == 201905, ccomisiones_otras := NA]
+dataset[foto_mes == 201905, ctarjeta_visa_debitos_automaticos := NA]
+dataset[foto_mes == 201905, ctransferencias_recibidas := NA]
+dataset[foto_mes == 201905, mactivos_margen := NA]
+dataset[foto_mes == 201905, mcomisiones := NA]
+dataset[foto_mes == 201905, mcomisiones_otras := NA]
+dataset[foto_mes == 201905, mpasivos_margen := NA]
+dataset[foto_mes == 201905, mrentabilidad_annual := NA]
+dataset[foto_mes == 201905, mrentabilidad := NA]
+dataset[foto_mes == 201905, mtransferencias_recibidas := NA]
+
+dataset[foto_mes == 201910, ccajeros_propios_descuentos := NA]
+dataset[foto_mes == 201910, ccomisiones_otras := NA]
+dataset[foto_mes == 201910, chomebanking_transacciones := NA]
+dataset[foto_mes == 201910, ctarjeta_master_descuentos := NA]
+dataset[foto_mes == 201910, ctarjeta_visa_descuentos := NA]
+dataset[foto_mes == 201910, mactivos_margen := NA]
+dataset[foto_mes == 201910, mcajeros_propios_descuentos := NA]
+dataset[foto_mes == 201910, mcomisiones := NA]
+dataset[foto_mes == 201910, mcomisiones_otras := NA]
+dataset[foto_mes == 201910, mpasivos_margen := NA]
+dataset[foto_mes == 201910, mrentabilidad_annual := NA]
+dataset[foto_mes == 201910, mrentabilidad := NA]
+dataset[foto_mes == 201910, mtarjeta_master_descuentos := NA]
+dataset[foto_mes == 201910, mtarjeta_visa_descuentos := NA]
+
+dataset[foto_mes == 202001, cliente_vip := NA]
+
+dataset[foto_mes == 202006, active_quarter := NA]
+dataset[foto_mes == 202006, catm_trx := NA]
+dataset[foto_mes == 202006, catm_trx_other := NA]
+dataset[foto_mes == 202006, ccajas_consultas := NA]
+dataset[foto_mes == 202006, ccajas_depositos := NA]
+dataset[foto_mes == 202006, ccajas_extracciones := NA]
+dataset[foto_mes == 202006, ccajas_otras := NA]
+dataset[foto_mes == 202006, ccajas_transacciones := NA]
+dataset[foto_mes == 202006, ccallcenter_transacciones := NA]
+dataset[foto_mes == 202006, ccheques_depositados := NA]
+dataset[foto_mes == 202006, ccheques_depositados_rechazados := NA]
+dataset[foto_mes == 202006, ccheques_emitidos := NA]
+dataset[foto_mes == 202006, ccheques_emitidos_rechazados := NA]
+dataset[foto_mes == 202006, ccomisiones_otras := NA]
+dataset[foto_mes == 202006, cextraccion_autoservicio := NA]
+dataset[foto_mes == 202006, chomebanking_transacciones := NA]
+dataset[foto_mes == 202006, cmobile_app_trx := NA]
+dataset[foto_mes == 202006, ctarjeta_debito_transacciones := NA]
+dataset[foto_mes == 202006, ctarjeta_master_transacciones := NA]
+dataset[foto_mes == 202006, ctarjeta_visa_transacciones := NA]
+dataset[foto_mes == 202006, ctrx_quarter := NA]
+dataset[foto_mes == 202006, mactivos_margen := NA]
+dataset[foto_mes == 202006, matm := NA]
+dataset[foto_mes == 202006, matm_other := NA]
+dataset[foto_mes == 202006, mautoservicio := NA]
+dataset[foto_mes == 202006, mcheques_depositados := NA]
+dataset[foto_mes == 202006, mcheques_depositados_rechazados := NA]
+dataset[foto_mes == 202006, mcheques_emitidos := NA]
+dataset[foto_mes == 202006, mcheques_emitidos_rechazados := NA]
+dataset[foto_mes == 202006, mcomisiones := NA]
+dataset[foto_mes == 202006, mcomisiones_otras := NA]
+dataset[foto_mes == 202006, mcuentas_saldo := NA]
+dataset[foto_mes == 202006, mextraccion_autoservicio := NA]
+dataset[foto_mes == 202006, mpasivos_margen := NA]
+dataset[foto_mes == 202006, mrentabilidad_annual := NA]
+dataset[foto_mes == 202006, mrentabilidad := NA]
+dataset[foto_mes == 202006, mtarjeta_master_consumo := NA]
+dataset[foto_mes == 202006, mtarjeta_visa_consumo := NA]
+dataset[foto_mes == 202006, tcallcenter := NA]
+dataset[foto_mes == 202006, thomebanking := NA]
 
 
 # Feature Engineering Historico  ----------------------------------------------
@@ -105,13 +188,13 @@ for (i in 1:20) {
 
   # hiperparametros intencionalmente NO optimos
   PARAM$finalmodel$semilla <- semillas[i]
-  PARAM$finalmodel$optim$num_iterations <- 95
-  PARAM$finalmodel%optim%feature_fraction_bynode <- 0.865289407309257
-  PARAM$finalmodel$optim$learning_rate <- 0.133712039579837
-  PARAM$finalmodel$optim$feature_fraction <- 0.839279059022699
-  PARAM$finalmodel$optim$min_data_in_leaf <- 24904
-  PARAM$finalmodel$optim$num_leaves <- 254
-  envios_opt <- 11949
+  PARAM$finalmodel$optim$num_iterations <- 91
+  PARAM$finalmodel%optim%feature_fraction_bynode <- 0.535627616284044
+  PARAM$finalmodel$optim$learning_rate <- 0.17474880404578
+  PARAM$finalmodel$optim$feature_fraction <- 0.846169387561183
+  PARAM$finalmodel$optim$min_data_in_leaf <- 49963
+  PARAM$finalmodel$optim$num_leaves <- 259
+  envios_opt <- 12704
 
   # Hiperparametros FIJOS de  lightgbm
   PARAM$finalmodel$lgb_basicos <- list(
@@ -123,18 +206,18 @@ for (i in 1:20) {
     feature_pre_filter = FALSE,
     force_row_wise = TRUE, # para reducir warnings
     verbosity = -100,
-    max_depth = 19, # -1 significa no limitar,  por ahora lo dejo fijo
+    max_depth = 22, # -1 significa no limitar,  por ahora lo dejo fijo
     min_gain_to_split = 0.0, # min_gain_to_split >= 0.0
     min_sum_hessian_in_leaf = 0.001, #  min_sum_hessian_in_leaf >= 0.0
     lambda_l1 = 0.0, # lambda_l1 >= 0.0
     lambda_l2 = 0.0, # lambda_l2 >= 0.0
     max_bin = 31L, # lo debo dejar fijo, no participa de la BO
   
-    bagging_fraction = 0.603878898205687, # 0.0 < bagging_fraction <= 1.0
-    pos_bagging_fraction = 0.966861021676372, # 0.0 < pos_bagging_fraction <= 1.0
-    neg_bagging_fraction = 0.765846209761544, # 0.0 < neg_bagging_fraction <= 1.0
+    bagging_fraction = 0.86038339106711, # 0.0 < bagging_fraction <= 1.0
+    pos_bagging_fraction = 0.597557643974227, # 0.0 < pos_bagging_fraction <= 1.0
+    neg_bagging_fraction = 0.5157076181248260.515707618124826, # 0.0 < neg_bagging_fraction <= 1.0
     is_unbalance = FALSE,
-    bagging_freq = 30,#
+    bagging_freq = 4,#
     scale_pos_weight = 1.0, # scale_pos_weight > 0.0
   
     drop_rate = 0.1, # 0.0 < neg_bagging_fraction <= 1.0
