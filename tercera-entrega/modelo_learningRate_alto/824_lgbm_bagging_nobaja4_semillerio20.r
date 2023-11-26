@@ -14,7 +14,7 @@ require("lightgbm")
 # defino los parametros de la corrida, en una lista, la variable global  PARAM
 #  muy pronto esto se leera desde un archivo formato .yaml
 PARAM <- list()
-PARAM$experimento <- "824_nobaja4_drifting_201901-202105_iteracion67"
+PARAM$experimento <- "824_nobaja4_lrAlto-iteracion72_202105"
 
 PARAM$input$dataset <- "./datasets/competencia_03_all6.csv.gz"
 
@@ -188,13 +188,13 @@ for (i in 1:20) {
 
   # hiperparametros intencionalmente NO optimos
   PARAM$finalmodel$semilla <- semillas[i]
-  PARAM$finalmodel$optim$num_iterations <- 91
-  PARAM$finalmodel%optim%feature_fraction_bynode <- 0.535627616284044
-  PARAM$finalmodel$optim$learning_rate <- 0.17474880404578
+  PARAM$finalmodel$optim$num_iterations <- 99
+  PARAM$finalmodel$optim$feature_fraction_bynode <- 0.787833016155574
+  PARAM$finalmodel$optim$learning_rate <- 1.0
   PARAM$finalmodel$optim$feature_fraction <- 0.846169387561183
-  PARAM$finalmodel$optim$min_data_in_leaf <- 49963
-  PARAM$finalmodel$optim$num_leaves <- 259
-  envios_opt <- 12704
+  PARAM$finalmodel$optim$min_data_in_leaf <- 33056
+  PARAM$finalmodel$optim$num_leaves <- 598
+  envios_opt <- 12960
 
   # Hiperparametros FIJOS de  lightgbm
   PARAM$finalmodel$lgb_basicos <- list(
@@ -206,18 +206,18 @@ for (i in 1:20) {
     feature_pre_filter = FALSE,
     force_row_wise = TRUE, # para reducir warnings
     verbosity = -100,
-    max_depth = 22, # -1 significa no limitar,  por ahora lo dejo fijo
-    min_gain_to_split = 0.0, # min_gain_to_split >= 0.0
-    min_sum_hessian_in_leaf = 0.001, #  min_sum_hessian_in_leaf >= 0.0
+    max_depth = 21, # -1 significa no limitar,  por ahora lo dejo fijo
+    min_gain_to_split = 8.54654511263883, # min_gain_to_split >= 0.0
+    min_sum_hessian_in_leaf = 0.169791804344274, #  min_sum_hessian_in_leaf >= 0.0
     lambda_l1 = 0.0, # lambda_l1 >= 0.0
     lambda_l2 = 0.0, # lambda_l2 >= 0.0
     max_bin = 31L, # lo debo dejar fijo, no participa de la BO
   
-    bagging_fraction = 0.86038339106711, # 0.0 < bagging_fraction <= 1.0
-    pos_bagging_fraction = 0.597557643974227, # 0.0 < pos_bagging_fraction <= 1.0
-    neg_bagging_fraction = 0.5157076181248260.515707618124826, # 0.0 < neg_bagging_fraction <= 1.0
+    bagging_fraction = 0.681698235156875, # 0.0 < bagging_fraction <= 1.0
+    pos_bagging_fraction = 0.30082537271732, # 0.0 < pos_bagging_fraction <= 1.0
+    neg_bagging_fraction = 0.812226769753592, # 0.0 < neg_bagging_fraction <= 1.0
     is_unbalance = FALSE,
-    bagging_freq = 4,#
+    bagging_freq = 23,#
     scale_pos_weight = 1.0, # scale_pos_weight > 0.0
   
     drop_rate = 0.1, # 0.0 < neg_bagging_fraction <= 1.0
