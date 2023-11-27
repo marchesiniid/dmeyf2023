@@ -19,15 +19,18 @@ PARAM$experimento <- "824_nobaja4_drifting_201901-202105_iteracion67"
 PARAM$input$dataset <- "./datasets/competencia_03_all6.csv.gz"
 
 # meses donde se entrena el modelo
-PARAM$input$training <- c(201901, 201902, 201903,201904, 201905, 201906, 201907, 201908, 201909, 201910, 201911, 201912, 202001, 202002, 202003, 202004, 202009, 202010, 202011, 202012, 202101, 202102, 202103, 202104, 202105)
+PARAM$input$training <- c( 201901, 201902, 201903, 201904, 201905, 202906,
+  201907, 201908,201908, 201909, 201910, 201911, 201912, 202001, 202002,
+  # huevo de la pandemia
+  202010, 202011, 202012, 202101, 202102, 202103, 202104, 202105)
+
 PARAM$input$future <- c(202109) # meses donde se aplica el modelo
 
-PARAM$finalmodel$semilla <- 500107
+semillas <- c(500107, 500167, 579967, 835973, 718387, 
+              111011, 111012, 111013, 111014, 111015,
+             500109, 500169, 579969, 835077, 718389,
+             111021, 111031, 111041, 111051, 111061)
 
-semillas <- c(528881, 583613, 661417, 894407, 915251,
-              173827, 173839, 173867, 547093, 547103,
-              638269, 638303, 638359, 721181, 837451, 
-              878173, 910771, 910781, 942659, 942661)
 
 
 
@@ -138,15 +141,39 @@ dataset[foto_mes == 202006, thomebanking := NA]
 #   Sin lags no hay paraiso ! corta la bocha
 #   https://rdrr.io/cran/data.table/man/shift.html
 
-# BORRAR LOS BAJA
+# defino las columnas a las que les puedo calcular el lag
+cols_lagueables <- copy(setdiff( colnames(dataset),
+  c("numero_de_cliente", "foto_mes", "clase_ternaria") ))
 
-to_delete <- sum(dataset$clase_ternaria=="BAJA+3")+sum(dataset$clase_ternaria=="BAJA+4")
-cat("Numero de registros intermedios volados: ",to_delete,"\n")
-cat(length(dataset))
-dataset <- dataset[dataset$clase_ternaria != "BAJA+3"]
-dataset <- dataset[dataset$clase_ternaria != "BAJA+4"]
-cat(length(dataset))
-#--------------------------------------
+# lags de orden 1
+dataset[, paste0(cols_lagueables, "_lag1") := shift(.SD, 1, NA, "lag"),
+  by = numero_de_cliente,
+  .SDcols = cols_lagueables
+]
+
+# agrego los delta lags de orden 1
+for (vcol in cols_lagueables) dataset[, paste0(vcol, "_delta1") := get(vcol) - get(paste0(vcol, "_lag1"))]
+
+
+# lags de orden 2
+dataset[, paste0(cols_lagueables, "_lag2") := shift(.SD, 2, NA, "lag"),
+  by = numero_de_cliente,
+  .SDcols = cols_lagueables
+]
+
+# agrego los delta lags de orden 2
+for (vcol in cols_lagueables) dataset[, paste0(vcol, "_delta2") := get(vcol) - get(paste0(vcol, "_lag2"))]
+
+
+# lags de orden 6
+dataset[, paste0(cols_lagueables, "_lag6") := shift(.SD, 6, NA, "lag"),
+  by = numero_de_cliente,
+  .SDcols = cols_lagueables
+]
+
+# agrego los delta lags de orden 6
+for (vcol in cols_lagueables) dataset[, paste0(vcol, "_delta6") := get(vcol) - get(paste0(vcol, "_lag6"))]
+
 
 # paso la clase a binaria que tome valores {0,1}  enteros
 # set trabaja con la clase  POS = { BAJA+1, BAJA+2 }
@@ -194,7 +221,7 @@ for (i in 1:20) {
   PARAM$finalmodel$optim$feature_fraction <- 0.846169387561183
   PARAM$finalmodel$optim$min_data_in_leaf <- 49963
   PARAM$finalmodel$optim$num_leaves <- 259
-  envios_opt <- 12704
+  
 
   # Hiperparametros FIJOS de  lightgbm
   PARAM$finalmodel$lgb_basicos <- list(
@@ -311,6 +338,13 @@ write.csv(ganancias,
 
 tb_entrega_promedio <- rbindlist(lista_tb_entrega)[, .(prob = mean(prob)), by = .(numero_de_cliente, foto_mes)]
 setorder(tb_entrega_promedio, -prob)
+
+#guardo tabla con prob promedio del modelo para ensambles posteriores
+fwrite(tb_entrega_promedio[, list(numero_de_cliente, foto_mes, prob)],
+      file = paste0(PARAM$experimento, "_prob_promedio.csv"),
+      sep = ","
+    )
+
 
 for (envios in cortes) {
     tb_entrega_promedio[, Predicted := 0L]
