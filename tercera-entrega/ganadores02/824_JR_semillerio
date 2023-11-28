@@ -14,22 +14,22 @@ require("lightgbm")
 # defino los parametros de la corrida, en una lista, la variable global  PARAM
 #  muy pronto esto se leera desde un archivo formato .yaml
 PARAM <- list()
-PARAM$experimento <- "824_nobaja4_drifting_201901-202105_iteracion67"
+PARAM$experimento <- "824_JR_semillerio"
 
-PARAM$input$dataset <- "./datasets/competencia_03_all6.csv.gz"
+PARAM$input$dataset <- "./datasets/competencia_03_ternaria.csv.gz"
 
 # meses donde se entrena el modelo
 PARAM$input$training <- c( 201901, 201902, 201903, 201904, 201905, 202906,
-  201907, 201908,201908, 201909, 201910, 201911, 201912, 202001, 202002,
-  # huevo de la pandemia
-  202010, 202011, 202012, 202101, 202102, 202103, 202104, 202105)
+                           201907, 201908,201908, 201909, 201910, 201911, 201912, 202001, 202002,
+                           # huevo de la pandemia
+                           202010, 202011, 202012, 202101, 202102, 202103, 202104, 202105)
 
 PARAM$input$future <- c(202109) # meses donde se aplica el modelo
 
 semillas <- c(500107, 500167, 579967, 835973, 718387, 
               111011, 111012, 111013, 111014, 111015,
-             500109, 500169, 579969, 835077, 718389,
-             111021, 111031, 111041, 111051, 111061)
+              500109, 500169, 579969, 835077, 718389,
+              111021, 111031, 111041, 111051, 111061)
 
 
 
@@ -143,12 +143,12 @@ dataset[foto_mes == 202006, thomebanking := NA]
 
 # defino las columnas a las que les puedo calcular el lag
 cols_lagueables <- copy(setdiff( colnames(dataset),
-  c("numero_de_cliente", "foto_mes", "clase_ternaria") ))
+                                 c("numero_de_cliente", "foto_mes", "clase_ternaria") ))
 
 # lags de orden 1
 dataset[, paste0(cols_lagueables, "_lag1") := shift(.SD, 1, NA, "lag"),
-  by = numero_de_cliente,
-  .SDcols = cols_lagueables
+        by = numero_de_cliente,
+        .SDcols = cols_lagueables
 ]
 
 # agrego los delta lags de orden 1
@@ -157,8 +157,8 @@ for (vcol in cols_lagueables) dataset[, paste0(vcol, "_delta1") := get(vcol) - g
 
 # lags de orden 2
 dataset[, paste0(cols_lagueables, "_lag2") := shift(.SD, 2, NA, "lag"),
-  by = numero_de_cliente,
-  .SDcols = cols_lagueables
+        by = numero_de_cliente,
+        .SDcols = cols_lagueables
 ]
 
 # agrego los delta lags de orden 2
@@ -167,8 +167,8 @@ for (vcol in cols_lagueables) dataset[, paste0(vcol, "_delta2") := get(vcol) - g
 
 # lags de orden 6
 dataset[, paste0(cols_lagueables, "_lag6") := shift(.SD, 6, NA, "lag"),
-  by = numero_de_cliente,
-  .SDcols = cols_lagueables
+        by = numero_de_cliente,
+        .SDcols = cols_lagueables
 ]
 
 # agrego los delta lags de orden 6
@@ -212,17 +212,15 @@ dtrain <- lgb.Dataset(
 ganancias <- tibble::tribble(~semilla,~ganancia,~envios)
 lista_tb_entrega <- list()
 for (i in 1:20) {
-
+  
   # hiperparametros intencionalmente NO optimos
   PARAM$finalmodel$semilla <- semillas[i]
-  PARAM$finalmodel$optim$num_iterations <- 91
-  PARAM$finalmodel%optim%feature_fraction_bynode <- 0.535627616284044
-  PARAM$finalmodel$optim$learning_rate <- 0.17474880404578
-  PARAM$finalmodel$optim$feature_fraction <- 0.846169387561183
-  PARAM$finalmodel$optim$min_data_in_leaf <- 49963
-  PARAM$finalmodel$optim$num_leaves <- 259
+  PARAM$finalmodel$optim$num_iterations <- 601
+  PARAM$finalmodel$optim$learning_rate <- 0.0619195674126968
+  PARAM$finalmodel$optim$min_data_in_leaf <- 8382
+  PARAM$finalmodel$optim$num_leaves <- 72
   
-
+  
   # Hiperparametros FIJOS de  lightgbm
   PARAM$finalmodel$lgb_basicos <- list(
     boosting = "gbdt", # puede ir  dart  , ni pruebe random_forest
@@ -233,24 +231,23 @@ for (i in 1:20) {
     feature_pre_filter = FALSE,
     force_row_wise = TRUE, # para reducir warnings
     verbosity = -100,
-    max_depth = 22, # -1 significa no limitar,  por ahora lo dejo fijo
+    max_depth = -1L, # -1 significa no limitar,  por ahora lo dejo fijo
     min_gain_to_split = 0.0, # min_gain_to_split >= 0.0
     min_sum_hessian_in_leaf = 0.001, #  min_sum_hessian_in_leaf >= 0.0
     lambda_l1 = 0.0, # lambda_l1 >= 0.0
     lambda_l2 = 0.0, # lambda_l2 >= 0.0
     max_bin = 31L, # lo debo dejar fijo, no participa de la BO
-  
-    bagging_fraction = 0.86038339106711, # 0.0 < bagging_fraction <= 1.0
-    pos_bagging_fraction = 0.597557643974227, # 0.0 < pos_bagging_fraction <= 1.0
-    neg_bagging_fraction = 0.5157076181248260.515707618124826, # 0.0 < neg_bagging_fraction <= 1.0
+    
+    bagging_fraction = 1.0, # 0.0 < bagging_fraction <= 1.0
+    pos_bagging_fraction = 1.0, # 0.0 < pos_bagging_fraction <= 1.0
+    neg_bagging_fraction = 1.0, # 0.0 < neg_bagging_fraction <= 1.0
     is_unbalance = FALSE,
-    bagging_freq = 4,#
     scale_pos_weight = 1.0, # scale_pos_weight > 0.0
-  
+    
     drop_rate = 0.1, # 0.0 < neg_bagging_fraction <= 1.0
     max_drop = 50, # <=0 means no limit
     skip_drop = 0.5, # 0.0 <= skip_drop <= 1.0
-  
+    
     extra_trees = TRUE # Magic Sauce
   )
   
