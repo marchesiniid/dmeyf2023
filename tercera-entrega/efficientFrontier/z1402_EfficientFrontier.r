@@ -1,15 +1,21 @@
-# Alcanzan 32 GB de memoria RAM
+# leitmotiv  "Don't believe me, just watch"
+# Este script dibuba los gráficos de la Clase plenaria-01
+#   en donde se expuso que es posible construir Semillerios superadores
+#   con learning_rate  absurdamente altos
+#   y QUE FUNCIONAN MEJOR que el mejor LightGBM 
+#   producto de una Bayesian Optimization
+
+# les recuerdo las ganancias del podio de la Segunda Competencia
+#   163.3  159.3  158.8
 
 #limpio la memoria
 rm( list= ls(all.names= TRUE) )  #remove all objects
 gc( full= TRUE )                 #garbage collection
 
 require("data.table")
-require("rlist")
-require("yaml")
 require("primes")
-
 require("lightgbm")
+require("ggplot2")
 
 
 #------------------------------------------------------------------------------
@@ -22,591 +28,472 @@ options(error = function() {
 
 #Parametros del script
 PARAM  <- list()
-PARAM$experimento  <- "EF14020-01"
+PARAM$experimento  <- "plenaria-01"
 
-# en esta carpeta debe estar  este dataset YA PREPROCESADO
-#  https://storage.googleapis.com/open-courses/dmeyf2023-8a1e/dataset_training.csv.gz
-PARAM$exp_input  <- "TS14010-01"   # aqui esta el dataset con FE
+# Dataset que tiene completa clase_ternaria para 202107
+#   asi puedo calcular las ganancias
+PARAM$dataset_input <-  "~/buckets/b1/datasets/competencia_03_ternaria.csv.gz"
 
-PARAM$arch_grid  <- "tb_grid.txt"
+# grid inicial, se puede cambiar por los casos que se desee probar
+# aqui estan los CIENTOS de casos con LR alto
+PARAM$grid_nube  <- "https://storage.googleapis.com/open-courses/dmeyf2023-8a1e/grid_plenaria.txt"
+
+# para generar vector de numeros primos
+PARAM$semilla_primos <- 500107   # primer semilla
+
+# observar hueco de la pandemia
+PARAM$trainingstrategy$clases_minoritarias <- c("BAJA+1","BAJA+2")
+PARAM$trainingstrategy$undersampling <- 0.1
+PARAM$trainingstrategy$semilla <- 500167  # segunda semilla
+
+PARAM$trainingstrategy$finaltrain <- c( 201901, 201902, 201903, 201904, 201905,
+                                        202906, 201907, 201908, 201909, 201910, 201911, 201912, 202001,
+                                        202002, 202010, 202011, 202012, 202101, 202102, 202103, 202104, 202105, 202106)
+
+PARAM$trainingstrategy$future <- c(202109)
 
 
-PARAM$semillerio <- 20   # cantidad maxima se semillas que voy a usar en los semillerios
-PARAM$semilla_primos <- 102191
-
-PARAM$lgb_semilla  <- 102191   # cambiar por su propia semilla, puede ser la misma
-
-
-#Hiperparametros FIJOS de  lightgbm
+# Hiperparametros FIJOS de  lightgbm
 PARAM$lgb_basicos <- list(
-   boosting= "gbdt",               # puede ir  dart  , ni pruebe random_forest
-   objective= "binary",
-   metric= "custom",
-   first_metric_only= TRUE,
-   boost_from_average= TRUE,
-   feature_pre_filter= FALSE,
-   force_row_wise= TRUE,           # para que los alumnos no se atemoricen con tantos warning
-   verbosity= -100,
-   max_depth=  -1L,                # -1 significa no limitar,  por ahora lo dejo fijo
-   min_gain_to_split= 0.0,         # min_gain_to_split >= 0.0
-   min_sum_hessian_in_leaf= 0.001, # min_sum_hessian_in_leaf >= 0.0
-   lambda_l1= 0.0,                 # lambda_l1 >= 0.0
-   lambda_l2= 0.0,                 # lambda_l2 >= 0.0
-   max_bin= 31L,                   # lo debo dejar fijo, no participa de la BO
+  boosting= "gbdt",               # puede ir  dart  , ni pruebe random_forest
+  objective= "binary",
+  metric= "custom",
+  first_metric_only= TRUE,
+  boost_from_average= TRUE,
+  feature_pre_filter= FALSE,
+  force_row_wise= TRUE,           # para que los alumnos no se atemoricen con tantos warning
+  verbosity= -100,
+  max_depth=  -1L,                # -1 significa no limitar,  por ahora lo dejo fijo
+  min_gain_to_split= 0.0,         # min_gain_to_split >= 0.0
+  min_sum_hessian_in_leaf= 0.001, # min_sum_hessian_in_leaf >= 0.0
+  lambda_l1= 0.0,                 # lambda_l1 >= 0.0
+  lambda_l2= 0.0,                 # lambda_l2 >= 0.0
+  max_bin= 31L,                   # lo debo dejar fijo, no participa de la BO
+  
+  bagging_fraction= 1.0,          # 0.0 < bagging_fraction <= 1.0
+  pos_bagging_fraction= 1.0,      # 0.0 < pos_bagging_fraction <= 1.0
+  neg_bagging_fraction= 1.0,      # 0.0 < neg_bagging_fraction <= 1.0
+  is_unbalance=  FALSE,           #
+  scale_pos_weight= 1.0,          # scale_pos_weight > 0.0
+  
+  drop_rate=  0.1,                # 0.0 < neg_bagging_fraction <= 1.0
+  max_drop= 50,                   # <=0 means no limit
+  skip_drop= 0.5,                 # 0.0 <= skip_drop <= 1.0
+  
+  extra_trees= FALSE,              # IMPORTANCE que este en FALSE
+  early_stopping= 0
+)
 
-   bagging_fraction= 1.0,          # 0.0 < bagging_fraction <= 1.0
-   pos_bagging_fraction= 1.0,      # 0.0 < pos_bagging_fraction <= 1.0
-   neg_bagging_fraction= 1.0,      # 0.0 < neg_bagging_fraction <= 1.0
-   is_unbalance=  FALSE,           #
-   scale_pos_weight= 1.0,          # scale_pos_weight > 0.0
 
-   drop_rate=  0.1,                # 0.0 < neg_bagging_fraction <= 1.0
-   max_drop= 50,                   # <=0 means no limit
-   skip_drop= 0.5,                 # 0.0 <= skip_drop <= 1.0
-
-   extra_trees= FALSE,             # IMPORTANCE que este en FALSE
-   early_stopping= 200
-   )
-
-
-# Las iteraciones que voy a REGISTRAR
-# generado exponencialmente con 1.2 ^ i   , i pertenece a [ 1, 42 ]
-#    unique( round(1.2 ^seq(42 )))
-PARAM$num_iterations <- c( 1, 2, 4, 8, 10, 12, 15, 18, 22, 27, 32, 38,
-  46, 55, 66, 80, 95, 115, 140,   165, 200, 240, 285, 340, 410, 490, 590,
-  710, 850,  1020, 1225, 1470, 1764, 2116 )
+PARAM$graficar$x_min <- 0
+PARAM$graficar$x_max <- 20000
+PARAM$graficar$y_min <- 100
+PARAM$graficar$y_max <- 180
+PARAM$graficar$escalar  <- 1e-06
 
 PARAM$home  <- "~/buckets/b1/"
 PARAM$exp_directory <- "exp"
 
 # FIN Parametros del script
 
-OUTPUT  <- list()
-
 #------------------------------------------------------------------------------
-# genera el nombre del campo, en la gran tabla de vectores de predicciones
-
-fnombre_campo <- function( sem, pos )
-{
- return( paste0( "s",
-        sprintf( "%03d", sem ),
-        "_i" ,
-        paste0( sprintf( "%03d", pos ) ) ) )
-}
-
-#------------------------------------------------------------------------------
-# esta funcion es llamada internamente por lightgbm, y solo acepta esos dos parametros
-# por lo que debe utilizar variables GLOBALES de entrada y salida
-
-GLOBAL_arbol <- 0
-GLOBAL_arbol_last <- 0
-GLOBAL_semilla <- 1
-GLOBAL_isemilla <- 1
-GLOBAL_semilla_t0 <- Sys.time()
-
-
-fganancia_lgbm_meseta <- function(probs, datos) {
-
-  GLOBAL_arbol <<- GLOBAL_arbol + 1
-  vgan <- 0
-
-  # si es una de las iteraciones que me interesa registrar
-  if( GLOBAL_arbol %in% PARAM$num_iterations ) {
-
-    GLOBAL_arbol_last <<- GLOBAL_arbol
-    cat( GLOBAL_arbol, " " )
-
-    # cargo la matrix de los tiempos de corrida
-    pos <- match(GLOBAL_arbol,  PARAM$num_iterations)
-    GLOBAL_tiempos_actual[ GLOBAL_isemilla, pos] <<-
-      as.numeric( Sys.time() - GLOBAL_semilla_t0,  units = "secs" )
-
-    nombre_campo <- fnombre_campo( GLOBAL_isemilla, pos )
-
-    if( GLOBAL_isemilla==1 ) {
-
-      GLOBAL_tiempos_actual[ GLOBAL_isemilla, pos] <<-
-        as.numeric( Sys.time() - GLOBAL_semilla_t0,  units = "secs" )
-
-      GLOBAL_future_actual[ , eval(nombre_campo) := probs ]
-    } else {
-      # acumulo la suma de tiempos por un lado, y vector de probs por otro
-      GLOBAL_tiempos_actual[ GLOBAL_isemilla, pos] <<-
-        GLOBAL_tiempos_actual[ GLOBAL_isemilla-1, pos] +
-        as.numeric( Sys.time() - GLOBAL_semilla_t0,  units = "secs" )
-
-      nombre_campo_anterior <- fnombre_campo(
-        GLOBAL_isemilla -1 ,
-        pos )
-
-      GLOBAL_future_actual[ , eval(nombre_campo) := probs + get(eval(nombre_campo_anterior)) ]
-    }
-
-  }
-
-  ganancia_meseta <- 0
-
-  # hago solo esto para la primera semilla GLOBAL_isemilla == 1
-  #  ya que solo en ese caso estoy en modo early_stopping
-  if( GLOBAL_isemilla == 1 ) {
-
-    pred_local <- copy( GLOBAL_future )
-    pred_local[ , prob := probs ]
-    setorder( pred_local, -prob )
-    pred_local[, gan_acum := cumsum(ganancia)]
-    pred_local[, gan_suavizada := frollmean(
-      x = gan_acum, n = 2001,
-      align = "center", na.rm = TRUE, hasNA = TRUE )]
-
-    ganancia_meseta <- pred_local[, max(gan_suavizada, na.rm = TRUE)]
-  }
-
-
-  return( list(
-    "name" = "ganancia",
-    "value" = ganancia_meseta,
-    "higher_better" = TRUE ))
-
-}
-#------------------------------------------------------------------------------
-
-EstimarGanancia_lightgbm  <- function( x )
-{
-  gc()
-  GLOBAL_iteracion  <<- GLOBAL_iteracion + 1L # ATENCION
-  cat( "\n iter " , GLOBAL_iteracion )
-
-  # creo los vectores acumulados, uno para cada num_iterations
-  # Creo la matriz de los tiempos
-  GLOBAL_tiempos_actual <<- matrix(0, PARAM$semillerio, length(PARAM$num_iterations))
-  GLOBAL_future_actual <<- copy( GLOBAL_future )
-
-  # hago la union de los parametros basicos y los moviles que vienen en x
-  param_completo  <- c( PARAM$lgb_basicos,  x )
-  param_completo$num_iterations  <- max(PARAM$num_iterations)
-
-  # recorro TODAS las semillas de ksemillas
-  for( isem in seq(PARAM$semillerio) ) {
-
-    GLOBAL_semilla_t0 <<- Sys.time()
-    cat( "\n isem", isem, "-- " )
-    GLOBAL_gan_max_semilla <<- -Inf
-    GLOBAL_gan_ultimo <<- -Inf
-    GLOBAL_arbol <<- 0
-    GLOBAL_arbol_last <<- 0
-
-    semilla <- ksemillas[ isem ]
-    GLOBAL_semilla <<- semilla
-    GLOBAL_isemilla <<- isem
-
-    # IMPORTANTE, la semilla que voy a usar
-    param_completo$seed <- semilla
-
-    # llamada a lightgbm
-    set.seed( semilla, kind= "L'Ecuyer-CMRG")
-    modelo_final_train  <-
-      lgb.train( data= dfinal_train,
-                 valids = list(valid = dfuture),
-                 eval = fganancia_lgbm_meseta,
-                 param= param_completo,
-                 verbose= -100 )
-
-    # trampita, desactivo el early_stopping luego de la primera iteracion
-    if( isem==1 ) {
-     param_completo$num_iterations  <- GLOBAL_arbol_last + 1
-     param_completo$early_stopping <- 0
-    }
-  }
-
-  # calculo las ganancias y tiempos que van a  tb_final.txt
-  generar_salida( GLOBAL_iteracion, x )
-
-  # limpio la monstruosidad que cree
-  rm( "GLOBAL_future_actual" )
-  rm( "GLOBAL_tiempos_actual" )
-  gc()
-}
-
-#------------------------------------------------------------------------------
-
-calcular_tiempo <- function(arbol_id, desde, hasta)
-{
-  if( desde== hasta & desde==1)  tiempito <-  GLOBAL_tiempos_actual[ desde, arbol_id ]
-
-  if( desde== hasta & desde>1)
-    tiempito <-  GLOBAL_tiempos_actual[ desde, arbol_id ] - GLOBAL_tiempos_actual[ desde-1, arbol_id ]
-
-  if( desde < hasta )
-    tiempito <- GLOBAL_tiempos_actual[ hasta, arbol_id ] - GLOBAL_tiempos_actual[ desde, arbol_id ]
-
-  return( tiempito )
-}
-
-#------------------------------------------------------------------------------
-
-calcular_suavizada <- function( vgan, vprob )
-{
-  tbl <- as.data.table( list( "ganancia"=vgan, "prob"=vprob ) )
-  setorder( tbl, -prob )
-  tbl[ , gan_acum := cumsum(ganancia) ]
-
-  tbl[, gan_suavizada := frollmean(
-      x = gan_acum, n = 2001,
-       align = "center", na.rm = TRUE, hasNA = TRUE )]
-
-   suavizada  <- tbl[, max(gan_suavizada, na.rm = TRUE)]
-
-  return( suavizada )
-}
-#------------------------------------------------------------------------------
-
-calcular_ganancia <- function(arbol_id, desde, hasta)
-{
-
-  campo1 <- fnombre_campo( desde-1, arbol_id )
-  campo2 <- fnombre_campo( desde, arbol_id )
-  campo3 <- fnombre_campo( hasta, arbol_id )
-
-
-  if( desde==1)  vprobs  <-  GLOBAL_future_actual[ , get(eval(campo3)) ]
-
-  if( desde>1)
-    vprobs <-  GLOBAL_future_actual[ , get(eval(campo3)) ] -  GLOBAL_future_actual[ , get(eval(campo1)) ]
-
-  return( calcular_suavizada(  GLOBAL_future_actual$ganancia,  vprobs ) )
-}
-#------------------------------------------------------------------------------
-# esta funcion es una monstruosidad de carpinteria
-#  no apta para debiles de espiritu
-
-generar_salida <- function( piter, reg  )
-{
-  # acomodo la duracion de la primer semilla, porque genera el dataset
-  esperado <- mean( GLOBAL_tiempos_actual[ 2:20, 1 ] - GLOBAL_tiempos_actual[ 1:19, 1 ])
-  delta <-  GLOBAL_tiempos_actual[ 1, 1 ] -  esperado
-  ceros_idx <- which( GLOBAL_tiempos_actual[ 1, ] == 0 )
-  ultimo <- ceros_idx[1] - 1
-  GLOBAL_tiempos_actual[ , 1:ultimo ] <- GLOBAL_tiempos_actual[ , 1:ultimo ] - delta
-
-  # defino tb_final
-  tb_final <- data.table(
-    learning_rate = numeric(),
-    feature_fraction = numeric(),
-    num_leaves = integer(),
-    min_data_in_leaf = integer(),
-    iter = integer(),
-    isemilla = integer(),
-    arbol = integer(),
-    qsemillas = integer(),
-    tiempo = numeric(),
-    ganancia = numeric()
-  )
-
-  qarbol_idx_max <- ultimo
-  for( arbol_id  in  1:qarbol_idx_max )
-  {
-
-     for( qsem  in  1:PARAM$semillerio )
-     {
-       desde <-  1
-       hasta <-  desde + qsem - 1
-       while(  hasta <= PARAM$semillerio )
-       {
-          ganancia <- calcular_ganancia( arbol_id, desde, hasta )
-          tiempito <- calcular_tiempo( arbol_id, desde, hasta )
-
-          # inserto en tb_final
-          tb_final <- rbindlist( list( tb_final,
-            list( reg$learning_rate,
-                  reg$feature_fraction,
-                  reg$num_leaves,
-                  reg$min_data_in_leaf,
-                  piter,
-                  ifelse( desde==hasta, desde, 0),
-                  PARAM$num_iterations[arbol_id],
-                  qsem,
-                  tiempito,
-                  ganancia) ) )
-
-          desde <- desde + qsem
-          hasta <-  desde + qsem - 1
-      }
-    }
-  }
-
-  # agrego al final de la tabla con append
-  fwrite( tb_final,
-          file= "tb_final.txt",
-          sep="\t",
-          append = TRUE )
-
-}
-
-#------------------------------------------------------------------------------
-# ordeno tb_grid porla distancia a los puntos de la Convex Hull
-
-grid_reordenar <- function()
-{
-  dindividual <- fread("tb_final.txt")
-
-  tbl <- dindividual[ ,  list(
-      "qty"= .N,
-      "ganancia" = mean(ganancia),
-      "ganancia_max" = max(ganancia),
-      "tiempo" = mean(tiempo) ),
-       list( qsemillas, learning_rate, feature_fraction, num_leaves, min_data_in_leaf, arbol ) ]
-
-  rm( "dindividual" )
-  gc()
-
-
-  # calculo de la hull
-  setorder( tbl, tiempo, ganancia )
-  tbl[ , id := .I ]
-
-  tbl[ , estado := 0L ]
-  tbl[ , vtiempo := tiempo ]
-  tbl[ , vganancia := ganancia ]
-
-  for( vueltas in 1:10 ) {
-
-    hull <- chull( tbl$vtiempo, tbl$vganancia )
-
-    tbl_hull <- tbl[ hull,  list( tiempo, ganancia, id ) ]
-    tbl_hull <- tbl_hull[ ganancia > 0 ]
-
-
-    setorder( tbl_hull, tiempo )
-    ganancia_mejor <- tbl_hull[ , max(ganancia) ]
-
-    tiempo_mejor <- tbl[ ganancia==ganancia_mejor , min(tiempo) ]
-    tbl_hull <- tbl_hull[  tiempo <= tiempo_mejor ]
-
-    tiempo_menor <-tbl_hull[ , min(tiempo) ]
-    ganancia_menor <- tbl[ tiempo==tiempo_menor, max(ganancia) ]
-
-    tbl_hull <- tbl_hull[ ganancia > ganancia_menor ]
-
-    tbl[ id %in% tbl_hull$id, estado := vueltas ]
-    tbl[ id %in% tbl_hull$id, vtiempo:= 100 ]
-    tbl[ id %in% tbl_hull$id, vganancia:= 150000000 ]
-  }
-
-
-  # trampa
-  tbl[ , estadito := ifelse( estado==0, 0, -1) ]
-  setorder( tbl, estadito , -ganancia )
-
-  tbl <- tbl[1:100]
-
-
-  tb_grid <- fread( "tb_grid.txt" )
-  tb_grid[ , id := .I ]
+# Adaptado del ganador de la Segunda Competencia
+# Asigno NA  a las variabliables rotas
+
+CatastropheAnalysis <- function( dataset ) {
+  # Catastrophe Analysis
+  # deben ir cosas de este estilo
+  #   dataset[foto_mes == 202006, active_quarter := NA]
+  dataset[foto_mes == 201901, ctransferencias_recibidas := NA]
+  dataset[foto_mes == 201901, mtransferencias_recibidas := NA]
   
-  a0 <- 0.0
-  # cambios a tb_grid para explorar los mas alejados
-  tb_grid[ , a1 :=  (log( a0 + learning_rate) - mean(log( a0 + learning_rate))) / sd(log( a0 + learning_rate)) ]
-  tb_grid[ , a2 :=  (log( a0 + feature_fraction) - mean(log( a0 + feature_fraction))) / sd(log( a0 + feature_fraction)) ]
-  tb_grid[ , a3 :=  (log( a0 + num_leaves) - mean(log( a0 + num_leaves)) ) / sd(log( a0 + num_leaves)) ]
-  tb_grid[ , a4 :=  (log( a0 + min_data_in_leaf) - mean(log( a0 + min_data_in_leaf))) / sd(log( a0 + min_data_in_leaf)) ]
-
-  tb_grid[ , bueno := 0L]
-  tb_grid[ tbl,
-           on = list( learning_rate, feature_fraction, num_leaves, min_data_in_leaf ),
-           bueno := 1L ]
-
-  tb_buenos <- copy(tb_grid[ bueno==1 & procesado==1 ])
-  setnames( tb_buenos, "a1", "b1" )
-  setnames( tb_buenos, "a2", "b2" )
-  setnames( tb_buenos, "a3", "b3" )
-  setnames( tb_buenos, "a4", "b4" )
-
-  #producto cartesiano
-  tbl <- tb_grid[, as.list(tb_buenos[ , list(b1,b2,b3,b4)] ), 
-                 by = list(id, a1, a2, a3, a4)]
-
-  tbl_dist <- tbl[ , list(distancia_min = min( (a1- b1)^2 + (a2- b2)^2 + (a3- b3)^2 + (a4- b4)^2 , na.rm=TRUE) ),
-                  id ]
-
-  tb_grid[ , distancia := NULL ]
-  tb_grid[ tbl_dist,
-           on= list(id),
-           distancia := i.distancia_min ]
-
-  setorder( tb_grid, procesado, distancia )  # sabado 18-nov-2023
-
-  rm( tbl_dist )
-  rm( tbl )
-  gc()
-
-  tb_grid[ , bueno := NULL ]
-  tb_grid[ , a1 := NULL ]
-  tb_grid[ , a2 := NULL ]
-  tb_grid[ , a3 := NULL ]
-  tb_grid[ , a4 := NULL ]
-  tb_grid[ , id := NULL ]
+  dataset[foto_mes == 201902, ctransferencias_recibidas := NA]
+  dataset[foto_mes == 201902, mtransferencias_recibidas := NA]
   
-  fwrite( tb_grid,
-          file= "tb_grid.txt",
-          sep= "\t" )
+  dataset[foto_mes == 201903, ctransferencias_recibidas := NA]
+  dataset[foto_mes == 201903, mtransferencias_recibidas := NA]
+  
+  dataset[foto_mes == 201904, ctarjeta_visa_debitos_automaticos := NA]
+  dataset[foto_mes == 201904, ctransferencias_recibidas := NA]
+  dataset[foto_mes == 201904, mtransferencias_recibidas := NA]
+  dataset[foto_mes == 201904, mttarjeta_visa_debitos_automaticos := NA]
+  dataset[foto_mes == 201904, Visa_mfinanciacion_limite := NA]
+  
+  dataset[foto_mes == 201905, ccomisiones_otras := NA]
+  dataset[foto_mes == 201905, ctarjeta_visa_debitos_automaticos := NA]
+  dataset[foto_mes == 201905, ctransferencias_recibidas := NA]
+  dataset[foto_mes == 201905, mactivos_margen := NA]
+  dataset[foto_mes == 201905, mcomisiones := NA]
+  dataset[foto_mes == 201905, mcomisiones_otras := NA]
+  dataset[foto_mes == 201905, mpasivos_margen := NA]
+  dataset[foto_mes == 201905, mrentabilidad_annual := NA]
+  dataset[foto_mes == 201905, mrentabilidad := NA]
+  dataset[foto_mes == 201905, mtransferencias_recibidas := NA]
+  
+  dataset[foto_mes == 201910, ccajeros_propios_descuentos := NA]
+  dataset[foto_mes == 201910, ccomisiones_otras := NA]
+  dataset[foto_mes == 201910, chomebanking_transacciones := NA]
+  dataset[foto_mes == 201910, ctarjeta_master_descuentos := NA]
+  dataset[foto_mes == 201910, ctarjeta_visa_descuentos := NA]
+  dataset[foto_mes == 201910, mactivos_margen := NA]
+  dataset[foto_mes == 201910, mcajeros_propios_descuentos := NA]
+  dataset[foto_mes == 201910, mcomisiones := NA]
+  dataset[foto_mes == 201910, mcomisiones_otras := NA]
+  dataset[foto_mes == 201910, mpasivos_margen := NA]
+  dataset[foto_mes == 201910, mrentabilidad_annual := NA]
+  dataset[foto_mes == 201910, mrentabilidad := NA]
+  dataset[foto_mes == 201910, mtarjeta_master_descuentos := NA]
+  dataset[foto_mes == 201910, mtarjeta_visa_descuentos := NA]
+  
+  dataset[foto_mes == 202001, cliente_vip := NA]
+  
+  dataset[foto_mes == 202006, active_quarter := NA]
+  dataset[foto_mes == 202006, catm_trx := NA]
+  dataset[foto_mes == 202006, catm_trx_other := NA]
+  dataset[foto_mes == 202006, ccajas_consultas := NA]
+  dataset[foto_mes == 202006, ccajas_depositos := NA]
+  dataset[foto_mes == 202006, ccajas_extracciones := NA]
+  dataset[foto_mes == 202006, ccajas_otras := NA]
+  dataset[foto_mes == 202006, ccajas_transacciones := NA]
+  dataset[foto_mes == 202006, ccallcenter_transacciones := NA]
+  dataset[foto_mes == 202006, ccheques_depositados := NA]
+  dataset[foto_mes == 202006, ccheques_depositados_rechazados := NA]
+  dataset[foto_mes == 202006, ccheques_emitidos := NA]
+  dataset[foto_mes == 202006, ccheques_emitidos_rechazados := NA]
+  dataset[foto_mes == 202006, ccomisiones_otras := NA]
+  dataset[foto_mes == 202006, cextraccion_autoservicio := NA]
+  dataset[foto_mes == 202006, chomebanking_transacciones := NA]
+  dataset[foto_mes == 202006, cmobile_app_trx := NA]
+  dataset[foto_mes == 202006, ctarjeta_debito_transacciones := NA]
+  dataset[foto_mes == 202006, ctarjeta_master_transacciones := NA]
+  dataset[foto_mes == 202006, ctarjeta_visa_transacciones := NA]
+  dataset[foto_mes == 202006, ctrx_quarter := NA]
+  dataset[foto_mes == 202006, mactivos_margen := NA]
+  dataset[foto_mes == 202006, matm := NA]
+  dataset[foto_mes == 202006, matm_other := NA]
+  dataset[foto_mes == 202006, mautoservicio := NA]
+  dataset[foto_mes == 202006, mcheques_depositados := NA]
+  dataset[foto_mes == 202006, mcheques_depositados_rechazados := NA]
+  dataset[foto_mes == 202006, mcheques_emitidos := NA]
+  dataset[foto_mes == 202006, mcheques_emitidos_rechazados := NA]
+  dataset[foto_mes == 202006, mcomisiones := NA]
+  dataset[foto_mes == 202006, mcomisiones_otras := NA]
+  dataset[foto_mes == 202006, mcuentas_saldo := NA]
+  dataset[foto_mes == 202006, mextraccion_autoservicio := NA]
+  dataset[foto_mes == 202006, mpasivos_margen := NA]
+  dataset[foto_mes == 202006, mrentabilidad_annual := NA]
+  dataset[foto_mes == 202006, mrentabilidad := NA]
+  dataset[foto_mes == 202006, mtarjeta_master_consumo := NA]
+  dataset[foto_mes == 202006, mtarjeta_visa_consumo := NA]
+  dataset[foto_mes == 202006, tcallcenter := NA]
+  dataset[foto_mes == 202006, thomebanking := NA]
+}
 
+#------------------------------------------------------------------------------
+# Adaptivado del ganador de la Segunda Competencia
+#  Lags y Delta Lags de orden 1, 2 y 6
+
+FeatureEngineeringHistorico <- function( dataset ) {
+  
+  # Feature Engineering Historico
+  #   aqui deben calcularse los  lags y  lag_delta
+  #   Sin lags no hay paraiso !  corta la bocha
+  # defino las columnas a las que les puedo calcular el lag
+  cols_lagueables <- copy(setdiff( colnames(dataset),
+                                   c("numero_de_cliente", "foto_mes", "clase_ternaria") ))
+  
+  # FUNDAMENTAL  ordenar el dataset anes de los lags
+  setorder( dataset, numero_de_cliente, foto_mes )
+  
+  # lags de orden 1
+  dataset[, paste0(cols_lagueables, "_lag1") := shift(.SD, 1, NA, "lag"),
+          by = numero_de_cliente,
+          .SDcols = cols_lagueables]
+  
+  # agrego los delta lags de orden 1
+  for (vcol in cols_lagueables) 
+    dataset[, paste0(vcol, "_delta1") := get(vcol) - get(paste0(vcol, "_lag1"))]
+  
+  
+  # lags de orden 2
+  dataset[, paste0(cols_lagueables, "_lag2") := shift(.SD, 2, NA, "lag"),
+          by = numero_de_cliente,
+          .SDcols = cols_lagueables]
+  
+  # agrego los delta lags de orden 2
+  for (vcol in cols_lagueables) 
+    dataset[, paste0(vcol, "_delta2") := get(vcol) - get(paste0(vcol, "_lag2"))]
+  
+  
+  # lags de orden 6
+  dataset[, paste0(cols_lagueables, "_lag6") := shift(.SD, 6, NA, "lag"),
+          by = numero_de_cliente,
+          .SDcols = cols_lagueables]
+  
+  # agrego los delta lags de orden 6
+  for (vcol in cols_lagueables) 
+    dataset[, paste0(vcol, "_delta6") := get(vcol) - get(paste0(vcol, "_lag6"))]
+  
+  # reordeno original
+  setorder( dataset, foto_mes, numero_de_cliente )
 }
 #------------------------------------------------------------------------------
+# solamente undersampling al 10% de la clase CONTINUA
 
-generar_grid <- function( qregistros, arch_salida )
-{
+TrainingStrategy <- function( dataset ) {
+  
+  dataset[, fold_future := 0L ]
+  dataset[ foto_mes %in% PARAM$trainingstrategy$future,
+           fold_future := 1L ]
+  
+  
+  dataset[, fold_finaltrain := 0L ]
+  set.seed( PARAM$trainingstrategy$semilla, kind= "L'Ecuyer-CMRG")
+  dataset[ foto_mes %in% PARAM$trainingstrategy$finaltrain,
+           azar := runif( nrow(dataset[foto_mes %in% PARAM$trainingstrategy$finaltrain ]) )]
+  
+  dataset[ foto_mes %in% PARAM$trainingstrategy$finaltrain &
+             (azar <= PARAM$trainingstrategy$undersampling | 
+                clase_ternaria %in% PARAM$trainingstrategy$clases_minoritarias ),
+           fold_finaltrain := 1L]
+  
+  dataset[ , azar:= NULL ]  # elimino el campo auxiliar
+}
+#------------------------------------------------------------------------------
+# calculo la curva de ganancia
+#   ganancia vs envios
 
-  tb_grid <- data.table(
-    learning_rate = numeric(),
-    feature_fraction = numeric(),
-    num_leaves = numeric(),
-    min_data_in_leaf = numeric() )
+curva_ganancia  <- function( vganancias, vprobs, puntos ) {
+  
+  gans_acum <- cumsum( vganancias[ order(-vprobs) ] )
+  
+  max_suavizada <- max( frollmean( gans_acum, 
+                                   n = 2001,
+                                   align = "center", 
+                                   na.rm = TRUE, 
+                                   hasNA = TRUE ), 
+                        na.rm=TRUE )
+  
+  
+  return( list( "suavizada" = max_suavizada,
+                "curva" = gans_acum[1:puntos] ))
+}
 
-  for( vlearning_rate in c(1.2, 1.0, 0.8, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.05, 0.02 )) {
-  for( vfeature_fraction in c( 0.95, 0.9, 0.8, 0.5, 0.3, 0.2, 0.1, 0.05, 0.02) ) {
-  for( vpartition  in seq(-16, -3, 1 ) ) {
-  for( vcoverage in  c(1.0, 0.8, 0.5, 0.3, 0.2, 0.1, 0.05) ) {
+#------------------------------------------------------------------------------
+# genero el grafico
+#  tiene en color negro el semillerio
+#   y luego cada uno de los modelitos
 
+generar_grafico <- function( reg, tb_modelitos ) {
+  
+  ganancia <- curva_ganancia( tb_modelitos$ganancia, tb_modelitos$semillerio, PARAM$graficar$x_max )
+  ganancia$curva <- ganancia$curva * PARAM$graficar$escalar
+  semillerio_ganancia_suavizada <- ganancia$suavizada * PARAM$graficar$escalar
+  
+  tablita <- as.data.table( list( "envios"=1:PARAM$graficar$x_max ))
+  tablita$ganancia <- ganancia$curva
+  
+  gra <- ggplot( tablita ) +
+    geom_line( aes(x=envios, y=ganancia, color="black"), show.legend= FALSE, na.rm=TRUE ) +
+    scale_y_continuous(limits = c(PARAM$graficar$y_min, PARAM$graficar$y_max) ) +
+    labs(title = paste( reg$id, "sem",reg$semillerio, "lr", reg$learning_rate,
+                        "iter", reg$num_iterations, "leaves", reg$num_leaves,
+                        "min_data", reg$min_data_in_leaf, "ff", reg$feature_fraction ),
+         subtitle= paste( "max gan suavizada", round(semillerio_ganancia_suavizada,1)),
+         x= 'envios', 
+         y='ganancia  ($ M)' ) 
+  
+  for( i in 1:reg$semillerio ) {
+    ganancia <- curva_ganancia( tb_modelitos$ganancia, tb_modelitos[ , get(paste0("s",i))], PARAM$graficar$x_max )
+    ganancia$curva <- ganancia$curva * PARAM$graficar$escalar
+    
+    tablita <- as.data.table( list( "envios"=1:PARAM$graficar$x_max ))
+    tablita$ganancia <- ganancia$curva
+    
+    gra <- gra + geom_line( data=tablita, aes(x=envios, y=ganancia, color="grey"), show.legend= FALSE, na.rm=TRUE  )
+  }
+  
+  
+  ggsave( gra, file=paste0( reg$id, ".pdf" ) )
+  
+  return( semillerio_ganancia_suavizada ) 
+}
 
-    vmin_data_in_leaf <-  pmax( 1L, round( qregistros * ( 2 ^ vpartition )) )
-    vnum_leaves <-  pmax( 2L,  pmin( 131072L, round( vcoverage * qregistros/vmin_data_in_leaf)  ) )
+#------------------------------------------------------------------------------
+# genero las salida para kaggle
+#  para que se puedan corroborar las ganancias en la Segunda Competencia
+#  y tambien que se pueda generar una salida para la Ultima Competencia
+#   y proba rque tan bueno es
 
-    tb_grid <- rbind( tb_grid,
-      list( vlearning_rate, vfeature_fraction, vnum_leaves, vmin_data_in_leaf ) )
+generar_kaggle <- function( vnumero_de_cliente, vprobs, reg ){
+  
+  tablita <- as.data.table( 
+    list( "numero_de_cliente" = vnumero_de_cliente[ order(-vprobs) ] ) )
+  
+  dir.create( "./kaggle", showWarnings = FALSE )
+  # genero los archivos para cada corte
+  for( corte in  seq( 8000, 17000, 500) ){
+    tablita[ , Predicted := 0L ]
+    tablita[ 1:corte, Predicted := 1L ]
+    
+    fwrite( tablita,
+            file= paste0( "./kaggle/", reg$id, "_", sprintf( "%.5d", corte), ".csv" ),
+            sep= "," )
+  }
+}
+#------------------------------------------------------------------------------
+# aqui realizo el trabajo pesado
 
-  }}}}  # cierro las cuatro llaves
-
-
-  # filtro  autoritario, si luego salen buenas ganancias en los extremos, se reajustara
-  tb_grid <- tb_grid[ num_leaves >= 8 & num_leaves < 1024 & min_data_in_leaf > 10 ]
-  tb_grid <- unique( tb_grid )
-
-  # ordeno el dataset AL AZAR
-  set.seed( PARAM$semilla, kind= "L'Ecuyer-CMRG")
-  tb_grid[ , azar := runif( nrow(tb_grid) ) ]
-  setorder( tb_grid, azar )
-  tb_grid[ , prioridad1 := 2L ]
-  tb_grid[ 1:100, prioridad1 := 1L ]
-  tb_grid[ , procesado := 0L ]
-  tb_grid[ , azar := NULL ]
-  setorder( tb_grid, prioridad1, -learning_rate )
-
-  fwrite( tb_grid,
-          arch_salida,
-          sep = "\t" )
-
+procesar_y_graficar <- function( reg ) {
+  
+  cat( reg$id, " ")
+  # creo la tabla donde voy a guardar la probabilidades
+  #  del semillerio
+  #  y de cada modelito
+  tb_modelitos <- dataset_future[, list(numero_de_cliente, ganancia) ]
+  tb_modelitos[, semillerio := 0 ]
+  
+  futuro_matrix <- data.matrix(dataset_future[, campos_buenos, with = FALSE])
+  param_completo <- copy(PARAM$lgb_basicos) 
+  
+  # establezco los hiperparametros, excepto la semilla
+  param_completo$num_iterations <- reg$num_iterations
+  param_completo$learning_rate <- reg$learning_rate
+  param_completo$num_leaves <- reg$num_leaves
+  param_completo$min_data_in_leaf <- reg$min_data_in_leaf
+  param_completo$feature_fraction <- reg$feature_fraction
+  
+  # itero por las semillas
+  for( isem  in 1:reg$semillerio ) {
+    
+    cat( isem, " " ) 
+    # aqui cambio la semilla de cada corrida
+    param_completo$seed <- ksemillas[ isem ]
+    
+    # genero el modelo para ESA semilla
+    modelito <- lgb.train( data= dfinaltrain,
+                           param= param_completo,
+                           verbose= -100 )
+    
+    # prediccion sobre los datos del futuro
+    prediccion <- predict( modelito, futuro_matrix )
+    
+    # acumulo en semillerio las probabilidades
+    #  directamente sumo, no hace falta promediar
+    tb_modelitos[, semillerio := semillerio + prediccion ]
+    tb_modelitos[, paste0("s", isem) := prediccion ]
+  }
+  
+  # Si viene la clase_ternaria, entonces hay ganancia
+  #   y puedo hacer los graficos
+  if( tb_modelitos[ is.na(ganancia), .N ] == 0 )
+    gan_suavizada <- generar_grafico( reg, tb_modelitos)
+  
+  # siempre puedo generar para Kaggle, aun sin clase_ternaria en future
+  generar_kaggle( tb_modelitos$numero_de_cliente,
+                  tb_modelitos$semillerio,
+                  reg )
+  
+  rm( futuro_matrix )
+  rm( tb_modelitos )
+  gc()
+  
+  cat("\n")
+  return( gan_suavizada )
 }
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
-# Aqui empieza el programa
+# Aqui comienza el programa
 
 setwd( PARAM$home )
-
-# genero un vector de una cantidad de PARAM$semillerio  de semillas,  buscando numeros primos al azar
-primos  <- generate_primes(min=100000, max=1000000)  #genero TODOS los numeros primos entre 100k y 1M
-set.seed( PARAM$semilla_primos ) #seteo la semilla que controla al sample de los primos
-ksemillas  <- sample(primos)[ 1:PARAM$semillerio ]   #me quedo con PARAM$semillerio  primos al azar
-
-# cargo el dataset donde voy a entrenar
-# esta en la carpeta del exp_input y siempre se llama  dataset_training.csv.gz
-dataset_input  <- paste0( "./", PARAM$exp_directory, "/", PARAM$exp_input, "/dataset_training.csv.gz" )
-dataset  <- fread( dataset_input )
-
-
-
-dataset[ , azar :=  NULL ]
 
 # creo la carpeta donde va el experimento
 dir.create( paste0( "./", PARAM$exp_directory ), showWarnings = FALSE )
 dir.create( paste0( "./", PARAM$exp_directory, "/", PARAM$experimento, "/"), showWarnings = FALSE )
-setwd(paste0( "./", PARAM$exp_directory, "/", PARAM$experimento, "/"))   #Establezco el Working Directory DEL EXPERIMENTO
-
-# Genero la grid a explorar, si es que ya no existe
-if( !file.exists( PARAM$arch_grid ) )
-  generar_grid( nrow( dataset[ fold_final_train==1]), PARAM$arch_grid )
+# Establezco el Working Directory DEL EXPERIMENTO
+setwd(paste0( "./", PARAM$exp_directory, "/", PARAM$experimento, "/"))
 
 
-# defino la clase binaria clase01
-dataset[  , clase01 := ifelse( clase_ternaria=="CONTINUA", 0L, 1L ) ]
+# genero un vector de semillas
+ksemillas <- generate_primes(min=100000, max=1000000)  # genero TODOS los numeros primos entre 100k y 1M
+set.seed( PARAM$semilla_primos, kind= "L'Ecuyer-CMRG" ) # seteo la semilla que controla al sample de los primos
+ksemillas  <- sample(ksemillas)
+
+# cargo el dataset
+# esta en la carpeta del exp_input y siempre se llama  dataset_training.csv.gz
+dataset <- fread( PARAM$dataset_input )
+
+#tmobile_app se daño a partir de 202010
+dataset[ , tmobile_app := NULL ]
+
+# Corrijo las variables rotas (estan en cero)
+CatastropheAnalysis( dataset )
+
+# No hago data drifting
+
+# Feature Engeneering Historico, agrego columnas
+FeatureEngineeringHistorico( dataset )
 
 
-#los campos que se pueden utilizar para la prediccion
-campos_buenos  <- setdiff( copy(colnames( dataset )),
-  c( "clase01", "clase_ternaria", "fold_train", "fold_test", "fold_final_train", "fold_future" ) )
+# Training Strategy
+#  Defino donde voy a entrenar
+TrainingStrategy( dataset )
 
 
-# la particion de final_train
-dfinal_train  <- lgb.Dataset(
-    data=    data.matrix( dataset[ fold_final_train==1, campos_buenos, with=FALSE] ),
-    label=   dataset[ fold_final_train==1, clase01 ],
-    free_raw_data= FALSE  )
+# Preparo donde voy a entrenar
+# paso la clase a binaria que tome valores {0,1}  enteros
+dataset[, clase01 := ifelse(clase_ternaria == "CONTINUA", 0L, 1L)]
+
+# los campos que se van a utilizar
+campos_buenos <- setdiff(
+  colnames(dataset),
+  c("clase_ternaria", "clase01", "fold_future", "fold_finaltrain"))
+
+# los datos del futuro, donde voy a evaluar el modelo
+dataset_future <- copy( dataset[ fold_future ==1L, ] )
+dataset_future[ , ganancia := ifelse( clase_ternaria=="BAJA+2", 273000, -7000) ]
+
+# dejo los datos en el formato que necesita LightGBM
+dfinaltrain <- lgb.Dataset(
+  data = data.matrix(dataset[fold_finaltrain == 1L, campos_buenos, with = FALSE]),
+  label = dataset[fold_finaltrain == 1L, clase01],
+  free_raw_data = FALSE )
 
 
-# la particion de future
-dfuture  <- lgb.Dataset(
-    data=    data.matrix( dataset[ fold_future==1, campos_buenos, with=FALSE] ),
-    label=   dataset[ fold_future==1, clase01 ],
-    free_raw_data= FALSE  )
-
-
-# defino la tabla del futuro, que posee las ganancias
-GLOBAL_future <- copy( dataset[ fold_future==1,
-  list( ganancia = ifelse( clase_ternaria=="BAJA+2", 273000, -7000 ) ) ] )
-
-
-rm( dataset )
+# hago espacio borrando lo que ya no necesito
+rm(dataset)
 gc()
 
 
-# Proceso la Grid
-
-#--------------------------------------
-# Proceso incial completamente al azar de 100 elementos de la grid
-
-tb_grid <- fread( "tb_grid.txt" )
-setorder( tb_grid, procesado, prioridad1 )
-faltan <- tb_grid[ prioridad1==1L & procesado == 0L , .N ]
-
-GLOBAL_iteracion <- tb_grid[ procesado == 1L , .N ]
-
-for( i in 1:faltan ){
-
-  reg <- tb_grid[ i, ]
-  EstimarGanancia_lightgbm( reg )
-  tb_grid[ i, procesado := 1 ]
-  tb_grid[ i, iteracion := GLOBAL_iteracion ]
-
-  # ineficientemente, grabo TODA tb_grid
-  fwrite( tb_grid,
-          file= "tb_grid.txt",
-          sep = "\t" )
+# el dataset que tiene los parametros que voy a probar
+if( file.exists( "grid_plenaria.txt" ) ) {
+  tb_grid <- fread( "grid_plenaria.txt" )
+} else {
+  # leao el inicial de la nube
+  tb_grid <- fread(PARAM$grid_nube) 
 }
 
 
-#--------------------------------------
-# ahora proceso por cercania a convex hull
+if( tb_grid[ , length(unique(id)) != .N ] ) {
+  cat( "Hay  id's repetidos en tb_grid. No quiero seguir.\n" )
+  stop()
+}
 
-
-grid_reordenar()
-tb_grid <- fread( "tb_grid.txt" )
-
-while(  tb_grid[ 1, procesado ] == 0 ) {
-
-  reg <- tb_grid[ 1 ]
-  GLOBAL_iteracion <- tb_grid[ procesado == 1L , .N ]
-
-  if( reg$procesado == 0 )
+# recorro la grid generando los graficos
+for( i in 1:nrow(tb_grid) )
+{
+  if( tb_grid[ i, procesado] == 0L )
   {
-    EstimarGanancia_lightgbm( reg )
-    tb_grid[ i, procesado := 1 ]
-    tb_grid[ i, iteracion := GLOBAL_iteracion ]
-
-    # ineficientemente, grabo TODA tb_grid
+    reg <- tb_grid[ i, ]
+    
+    # aqui hago el trabajo pesado
+    gan_suavizada <- procesar_y_graficar( reg )
+    
+    # marco que ya procese
+    tb_grid[ i, procesado := 1L ]
+    tb_grid[ i, suavizada := gan_suavizada ]
     fwrite( tb_grid,
-            file= "tb_grid.txt",
-            sep = "\t" )
-
-    grid_reordenar()
-    tb_grid <- fread( "tb_grid.txt" )
+            file = "grid_plenaria.txt",
+            sep ="\t" )
   }
 }
