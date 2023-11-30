@@ -10,3 +10,5 @@ Instrucciones:
 
 4) Correr ensamble_modelos_3 que tomará todas las predicciones de los modelos anteriores, calculará sus respectivos promedios para cada uno, y luego hara un ensamble de todos los modelos promediandolos. Sobre ese se generan los archivos para kaggle con distinta cantidad de envios.
 
+Nota:  Los modelos "sueltos" que no estan en subcarpeta (823 y 824), son ejemplos "template" de lo que se usó en los distintos modelos antes mencionados. No deben ser corridos. 
+
