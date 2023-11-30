@@ -1,1 +1,12 @@
+Instrucciones:
+
+1) Correr clase sexagenaria
+2) Correr fe_competencia03
+
+-Esto nos devuelve un competencia_03_all6.csv.gz que se usa para las primeras tres subcarpetas (comienzan en 824...)
+
+3) Correr los modelos de cada subcarpeta, incluida AutoGluon y ganadores02
+    3.1) Para ganadores02 correr el respectivo FE para el modelo VF
+
+4) Correr ensamble_modelos_3 que tomará todas las predicciones de los modelos anteriores, calculará sus respectivos promedios para cada uno, y luego hara un ensamble de todos los modelos promediandolos. Sobre ese se generan los archivos para kaggle con distinta cantidad de envios.
 
